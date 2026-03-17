@@ -1116,13 +1116,13 @@ function createRaid() {
     };
 
     localStorage.setItem("raid_" + raidChannelCode, JSON.stringify(raidActive));
-    alert("Raid Created!\nWiFi Code: " + raidChannelCode + "\nBoss: " + raidActive.boss.name);
+    alert("Raid Created!\nRaid Code: " + raidChannelCode + "\nBoss: " + raidActive.boss.name);
     startHostRaidLoop();
 }
 
 // Join Raid (other player)
 function joinRaid() {
-    const code = prompt("Enter WiFi code:");
+    const code = prompt("Enter raid code:");
     if(!code) return;
 
     raidChannelCode = code.toUpperCase();
@@ -1197,9 +1197,9 @@ collectPolygonFromRaid = function(boss) {
         name: boss.name,
         color: boss.shiny ? "gold" : boss.color,
         iv: [
-            Math.floor(Math.random() * 6) + 4,
-            Math.floor(Math.random() * 6) + 4,
-            Math.floor(Math.random() * 6) + 4
+            Math.floor(Math.random() * 6) + 6,
+            Math.floor(Math.random() * 6) + 6,
+            Math.floor(Math.random() * 6) + 6
         ].join("/"),
         shiny: boss.shiny,
         shape: "octagon" // assign octagon shape
