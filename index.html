@@ -1161,5 +1161,161 @@ setInterval(() => {
     else if (currentTop <= 0) bounceDirection = 1;
 }, 50);
 </script>
+	<script>
+// octagon polygon shapes
+		// --- POLYGON WIZARD VISUALS ---
+// Modify the inventory display to handle octagon polygons
+const originalCreateWizardCard = createWizardCard;
+createWizardCard = function(wizardData) {
+    const card = originalCreateWizardCard(wizardData);
+
+    const colorDiv = card.querySelector(".wizard-color");
+    if (wizardData.shape === "octagon") {
+        // Clip circle into 8-sided polygon
+        colorDiv.style.clipPath = "polygon(30% 0%, 70% 0%, 100% 30%, 100% 70%, 70% 100%, 30% 100%, 0% 70%, 0% 30%)";
+        colorDiv.style.borderRadius = "0"; // remove circle rounding
+    } else {
+        colorDiv.style.borderRadius = "50%";
+        colorDiv.style.clipPath = "none";
+    }
+
+    return card;
+};
+
+// --- POLYGON WIZARD OCTAGON VISUALS (Safe Paste Version) ---
+
+
+// --- POLYGON WIZARD OCTAGON VISUALS (Safe for multiple pastes) ---
+
+// Override collectPolygonFromRaid safely
+if (!window.originalCollectPolygonFromRaid) {
+    window.originalCollectPolygonFromRaid = collectPolygonFromRaid;
+}
+collectPolygonFromRaid = function(boss) {
+    const polygon = {
+        id: "polygon-" + Date.now(),
+        name: boss.name,
+        color: boss.shiny ? "gold" : boss.color,
+        iv: [
+            Math.floor(Math.random() * 6) + 4,
+            Math.floor(Math.random() * 6) + 4,
+            Math.floor(Math.random() * 6) + 4
+        ].join("/"),
+        shiny: boss.shiny,
+        shape: "octagon" // assign octagon shape
+    };
+
+    inventory.push(polygon);
+
+    alert(
+        `You collected ${polygon.name}!\n` +
+        `Shape: ${polygon.shape}\n` +
+        `Color: ${polygon.color}\n` +
+        `IV: ${polygon.iv}`
+    );
+
+    if (inventoryPanel.style.display !== "none") openInventory();
+
+    // Update catch screen wizard to octagon
+    if (currentCatchWizard === polygon) {
+        catchWizardElem.style.clipPath = "polygon(30% 0%, 70% 0%, 100% 30%, 100% 70%, 70% 100%, 30% 100%, 0% 70%, 0% 30%)";
+        catchWizardElem.style.borderRadius = "0";
+        catchWizardElem.style.background = polygon.color;
+    }
+};
+
+// Override createWizardCard safely
+if (!window.originalCreateWizardCard) {
+    window.originalCreateWizardCard = createWizardCard;
+}
+createWizardCard = function(wizardData) {
+    const card = window.originalCreateWizardCard(wizardData);
+
+    const colorDiv = card.querySelector(".wizard-color");
+    if (wizardData.shape === "octagon") {
+        colorDiv.style.clipPath = "polygon(30% 0%, 70% 0%, 100% 30%, 100% 70%, 70% 100%, 30% 100%, 0% 70%, 0% 30%)";
+        colorDiv.style.borderRadius = "0";
+    } else {
+        colorDiv.style.clipPath = "none";
+        colorDiv.style.borderRadius = "50%";
+    }
+
+    return card;
+};
+
+// Override showRaidBattleScreen safely
+if (!window.originalShowRaidBattleScreen) {
+    window.originalShowRaidBattleScreen = showRaidBattleScreen;
+}
+showRaidBattleScreen = function(boss) {
+    window.originalShowRaidBattleScreen(boss);
+
+    const bossCircle = document.getElementById("raidBossCircle");
+    if (boss.shape === "octagon") {
+        bossCircle.style.clipPath = "polygon(30% 0%, 70% 0%, 100% 30%, 100% 70%, 70% 100%, 30% 100%, 0% 70%, 0% 30%)";
+        bossCircle.style.borderRadius = "0";
+    } else {
+        bossCircle.style.clipPath = "none";
+        bossCircle.style.borderRadius = "50%";
+    }
+};
+// sssssssssssssssssssssssssssssssssssss
+// the previous ai coded snippet didnt work so override in a different way
+// WARNING: VERY MESSY JAVASCRIPT
+
+// --- MAKE RAID BOSSES OCTAGON ---
+// When a boss is created, ensure it has a shape property
+const originalCreateRaidBoss = createRaidBoss;
+createRaidBoss = function(hp = 2000) {
+    const boss = originalCreateRaidBoss(hp);
+    boss.shape = "octagon"; // <-- assign octagon shape
+    return boss;
+};
+
+// Override showRaidBattleScreen to display octagon
+const originalShowRaidBattleScreen = showRaidBattleScreen;
+showRaidBattleScreen = function(boss) {
+    originalShowRaidBattleScreen(boss);
+
+    const bossCircle = document.getElementById("raidBossCircle");
+    if (boss.shape === "octagon") {
+        bossCircle.style.clipPath = "polygon(30% 0%, 70% 0%, 100% 30%, 100% 70%, 70% 100%, 30% 100%, 0% 70%, 0% 30%)";
+        bossCircle.style.borderRadius = "0";
+    } else {
+        bossCircle.style.clipPath = "none";
+        bossCircle.style.borderRadius = "50%";
+    }
+};
+
+// Ensure any Polygon wizards collected are also octagon
+const originalCollectPolygonFromRaid = collectPolygonFromRaid;
+collectPolygonFromRaid = function(boss) {
+    const polygon = {
+        id: "polygon-" + Date.now(),
+        name: boss.name,
+        color: boss.shiny ? "gold" : boss.color,
+        iv: [
+            Math.floor(Math.random() * 6) + 4,
+            Math.floor(Math.random() * 6) + 4,
+            Math.floor(Math.random() * 6) + 4
+        ].join("/"),
+        shiny: boss.shiny,
+        shape: "octagon" // <-- octagon shape
+    };
+
+    inventory.push(polygon);
+
+    openCatchScreen(polygon);
+    if (inventoryPanel.style.display !== "none") openInventory();
+
+    // Update catch screen wizard to octagon
+    if (currentCatchWizard === polygon) {
+        catchWizardElem.style.clipPath = "polygon(30% 0%, 70% 0%, 100% 30%, 100% 70%, 70% 100%, 30% 100%, 0% 70%, 0% 30%)";
+        catchWizardElem.style.borderRadius = "0";
+        catchWizardElem.style.background = polygon.color;
+    }
+};
+
+	</script>
 </body>
 </html>
