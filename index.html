@@ -1300,20 +1300,20 @@ collectPolygonFromRaid = function(boss) {
             Math.floor(Math.random() * 6) + 4
         ].join("/"),
         shiny: boss.shiny,
-        shape: "octagon" // <-- octagon shape
+        shape: "octagon" // <-- mark as octagon
     };
 
     inventory.push(polygon);
 
+    // Open catch screen first
     openCatchScreen(polygon);
-    if (inventoryPanel.style.display !== "none") openInventory();
 
-    // Update catch screen wizard to octagon
-    if (currentCatchWizard === polygon) {
-        catchWizardElem.style.clipPath = "polygon(30% 0%, 70% 0%, 100% 30%, 100% 70%, 70% 100%, 30% 100%, 0% 70%, 0% 30%)";
-        catchWizardElem.style.borderRadius = "0";
-        catchWizardElem.style.background = polygon.color;
-    }
+    // Apply octagon shape to catch screen wizard
+    catchWizardElem.style.clipPath = "polygon(30% 0%, 70% 0%, 100% 30%, 100% 70%, 70% 100%, 30% 100%, 0% 70%, 0% 30%)";
+    catchWizardElem.style.borderRadius = "0";
+    catchWizardElem.style.background = polygon.color;
+
+    if (inventoryPanel.style.display !== "none") openInventory();
 };
 
 	</script>
