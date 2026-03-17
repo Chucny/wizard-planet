@@ -438,9 +438,9 @@ function startRaidBattle(){
 function collectPolygonFromRaid(boss) {
     // Generate random IVs 10-15
     const iv = [
-        Math.floor(Math.random() * 6) + 4, // Atk
-        Math.floor(Math.random() * 6) + 4, // Def
-        Math.floor(Math.random() * 6) + 4  // Spd
+        Math.floor(Math.random() * 6) + 6, // Atk
+        Math.floor(Math.random() * 6) + 6, // Def
+        Math.floor(Math.random() * 6) + 6  // Spd
     ].join("/");
 
     // Random color (or golden if shiny)
@@ -456,14 +456,9 @@ function collectPolygonFromRaid(boss) {
     };
 
     // Add to inventory
-    inventory.push(polygon);
+    openCatchScreen(polygon);
 
-    alert(
-        `You collected ${polygon.name}!\n` +
-        `Shape: ${polygon.shape}\n` +
-        `Color: ${polygon.color}\n` +
-        `IV: ${polygon.iv}`
-    );
+
 
     // Update inventory UI if open
     if (inventoryPanel.style.display !== "none") openInventory();
