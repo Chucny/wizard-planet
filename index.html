@@ -1146,5 +1146,20 @@ function joinRaid() {
     showRaidBattleScreen(raidActive.boss);
 }
 </script>
+	<script>
+// --- Make the player's wizard bounce while attacking ---
+const raidPlayerWizard = document.getElementById("raidPlayerWizard");
+
+let bounceDirection = 1;
+setInterval(() => {
+    if (!raidActive) return; // only bounce if a raid is active
+    const currentTop = parseFloat(raidPlayerWizard.style.top || "0");
+    // Move up and down by 5px
+    raidPlayerWizard.style.top = (currentTop + 1 * bounceDirection) + "px";
+    // Reverse direction if moved too far
+    if (currentTop >= 10) bounceDirection = -1;
+    else if (currentTop <= 0) bounceDirection = 1;
+}, 50);
+</script>
 </body>
 </html>
