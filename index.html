@@ -514,106 +514,100 @@ document.head.appendChild(style);
 // =============================================================================
 </script>
 
+<!-- Login Screen -->
+<div id="loginScreen" style="position:fixed;top:0;left:0;width:100%;height:100%;background:#000000cc;display:flex;align-items:center;justify-content:center;z-index:9999;">
+  <div style="background:#222;color:white;padding:20px;border-radius:10px;text-align:center;">
+    <h2>Wizard Planet Login</h2>
+    <input id="loginUsername" placeholder="Username" style="margin:5px;"/><br/>
+    <input id="loginPassword" type="password" placeholder="Password" style="margin:5px;"/><br/>
+    <button id="loginBtn" style="margin:5px;">Login</button>
+    <button id="registerBtn" style="margin:5px;">Create Account</button>
+    <p id="loginMsg" style="color:red;"></p>
+  </div>
+</div>
+
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-app.js";
-import {
-  getDatabase,
-  ref,
-  set,
-  get
-} from "https://www.gstatic.com/firebasejs/12.10.0/firebase-database.js";
-
-import {
-  getAuth,
-  createUserWithEmailAndPassword,
-  signInWithEmailAndPassword
-} from "https://www.gstatic.com/firebasejs/12.10.0/firebase-auth.js";
+import { getDatabase, ref, set, get } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-database.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyBwc_UlDGweMWbG17rBeytQ1Y2JpYEgrdI",
   authDomain: "wizard-planet0.firebaseapp.com",
-  databaseURL: "https://wizard-planet0-default-rtdb.europe-west1.firebasedatabase.app",
   projectId: "wizard-planet0",
   storageBucket: "wizard-planet0.firebasestorage.app",
   messagingSenderId: "648724841842",
-  appId: "1:648724841842:web:3cbe09a1b9a1b3dc07c9eb"
+  appId: "1:648724841842:web:3cbe09a1b9a1b3dc07c9eb",
+  databaseURL: "https://wizard-planet0-default-rtdb.europe-west1.firebasedatabase.app/"
 };
 
 const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
-const auth = getAuth(app);
 
-window.playerInventory = [];
-window.playerName = "";
+window.wizards = {}; // make sure this exists
 
-document.body.insertAdjacentHTML("beforeend", `
-<div id="loginScreen" style="
-position:fixed;
-inset:0;
-background:black;
-display:flex;
-flex-direction:column;
-justify-content:center;
-align-items:center;
-z-index:999999;
-color:white;
-gap:10px;
-">
-<input id="usernameInput" placeholder="Username">
-<input id="passwordInput" type="password" placeholder="Password">
-<button id="loginBtn">Login / Register</button>
-<div id="loginText"></div>
-</div>
-`);
+// --- Save wizards every 10 seconds ---
+setInterval(() => {
+  if (window.playerName && window.playerPassword) {
+    set(ref(db, "players/" + window.playerName), { 
+      password: window.playerPassword, 
+      wizards: window.wizards 
+    }).catch(err => console.error("Save error:", err));
+  }
+}, 10000);
 
+// --- Load wizards ---
+async function loadWizards(username) {
+  const snapshot = await get(ref(db, "players/" + username));
+  const data = snapshot.val();
+  if (data && data.wizards) {
+    Object.keys(window.wizards).forEach(k => delete window.wizards[k]);
+    Object.assign(window.wizards, data.wizards);
+  }
+}
+
+// --- Login ---
 document.getElementById("loginBtn").onclick = async () => {
+  const username = document.getElementById("loginUsername").value.trim();
+  const password = document.getElementById("loginPassword").value.trim();
+  const msg = document.getElementById("loginMsg");
 
-    const username = document.getElementById("usernameInput").value.trim().toLowerCase();
-    const password = document.getElementById("passwordInput").value.trim();
-    const email = username + "@wizardplanet.com";
+  if (!username || !password) return msg.textContent = "Enter username and password";
 
-    try {
-        await signInWithEmailAndPassword(auth,email,password);
-        afterLogin(username);
+  const snapshot = await get(ref(db, "players/" + username));
+  const data = snapshot.val();
 
-    } catch {
+  if (!data) return msg.textContent = "User does not exist";
+  if (data.password !== password) return msg.textContent = "Wrong password";
 
-        try {
-            await createUserWithEmailAndPassword(auth,email,password);
+  window.playerName = username;
+  window.playerPassword = password;
 
-            await set(ref(db,"players/"+username),{
-                inventory:[]
-            });
+  await loadWizards(username);
 
-            afterLogin(username);
-
-        } catch(e) {
-            document.getElementById("loginText").textContent = "Wrong password or username exists";
-        }
-    }
+  document.getElementById("loginScreen").style.display = "none";
+  msg.textContent = "";
+  console.log("Login successful:", username);
 };
 
-async function afterLogin(username) {
+// --- Register ---
+document.getElementById("registerBtn").onclick = async () => {
+  const username = document.getElementById("loginUsername").value.trim();
+  const password = document.getElementById("loginPassword").value.trim();
+  const msg = document.getElementById("loginMsg");
 
-    window.playerName = username;
+  if (!username || !password) return msg.textContent = "Enter username and password";
 
-    const playerRef = ref(db,"players/"+username);
+  const snapshot = await get(ref(db, "players/" + username));
+  if (snapshot.exists()) return msg.textContent = "Username already exists";
 
-    const snap = await get(playerRef);
+  window.playerName = username;
+  window.playerPassword = password;
+  window.wizards = {}; // start fresh
 
-    if(snap.exists()) {
-        window.playerInventory = snap.val().inventory || [];
-    }
+  await set(ref(db, "players/" + username), { password, wizards });
 
-    setInterval(()=>{
-        set(playerRef,{
-            inventory:window.playerInventory
-        });
-    },10000);
-
-    document.getElementById("loginScreen").remove();
-
-    console.log("Logged in:",username);
-}
+  msg.style.color = "green";
+  msg.textContent = "Account created! You can now log in.";
+};
 </script>
 </body></html>
