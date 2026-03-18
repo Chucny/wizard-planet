@@ -300,7 +300,7 @@ function connectMQTT(code){
     mqttClient = mqtt.connect(MQTT_BROKER, { keepalive: 30 });
     
     mqttClient.on('connect', () => {
-        console.log("✅ Connected to global MQTT broker");
+        console.log("✅ Connected");
         mqttClient.subscribe(RAID_TOPIC_PREFIX + code);
         
         if(raidHost){
@@ -351,7 +351,7 @@ function createRaid(){
         timer: RAID_TIME
     };
     connectMQTT(currentRaidCode);
-    alert(`🌍 RAID CREATED!\nCode: ${currentRaidCode}\nShare this code with anyone in the world!\nBoss: ${raidActive.boss.name}`);
+    alert(`🌍 RAID CREATED!\nCode: ${currentRaidCode}\nShare this code\nBoss: ${raidActive.boss.name}`);
     showRaidBattleScreen(raidActive.boss);
     startRaidBattleLoop();
 }
