@@ -6,185 +6,48 @@
 <title>Wizard Planet</title>
 <style>
 /* --- General --- */
-html, body {
-    margin: 0;
-    padding: 0;
-    width: 100%;
-    height: 100%;
-    overflow: hidden;
-    font-family: sans-serif;
-    background-color: lightblue;
-}
-
+html, body { margin:0; padding:0; width:100%; height:100%; overflow:hidden; font-family:sans-serif; background-color:lightblue; }
 /* --- Map --- */
-#map {
-    position: relative;
-    width: 100%;
-    height: 100%;
-    overflow: hidden;
-}
-
+#map { position:relative; width:100%; height:100%; overflow:hidden; }
 /* --- Player --- */
-#player {
-    position: absolute;
-    width: 20px;
-    height: 20px;
-    background: red;
-    border-radius: 50%;
-    transform: translate(-50%, -50%);
-    z-index: 10;
-}
-
+#player { position:absolute; width:20px; height:20px; background:red; border-radius:50%; transform:translate(-50%,-50%); z-index:10; }
 /* --- Wizard Balls --- */
-.red-ball {
-    position: absolute;
-    width: 50px;
-    height: 50px;
-    border-radius: 50%;
-    cursor: pointer;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    flex-direction: column;
-    z-index: 15;
-}
-.red-ball .eye {
-    position: absolute;
-    width: 8px;
-    height: 8px;
-    background: white;
-    border-radius: 50%;
-    top: 15px;
-}
-.red-ball .eye.left { left: 12px; }
-.red-ball .eye.right { right: 12px; }
-.red-ball .hat {
-    position: absolute;
-    width: 20px;
-    height: 20px;
-    background: white;
-    border-radius: 50%;
-    top: -10px;
-    left: 50%;
-    transform: translateX(-50%);
-    border: 2px solid black;
-}
-
+.red-ball { position:absolute; width:50px; height:50px; border-radius:50%; cursor:pointer; display:flex; justify-content:center; align-items:center; flex-direction:column; z-index:15; }
+.red-ball .eye { position:absolute; width:8px; height:8px; background:white; border-radius:50%; top:15px; }
+.red-ball .eye.left { left:12px; }
+.red-ball .eye.right { right:12px; }
+.red-ball .hat { position:absolute; width:20px; height:20px; background:white; border-radius:50%; top:-10px; left:50%; transform:translateX(-50%); border:2px solid black; }
 /* --- Fireball --- */
-.fireball {
-    position: absolute;
-    width: 20px;
-    height: 20px;
-    background: orange;
-    border-radius: 50%;
-    z-index: 20;
-    pointer-events: none;
-}
-
+.fireball { position:absolute; width:20px; height:20px; background:orange; border-radius:50%; z-index:20; pointer-events:none; }
 /* --- Map tiles --- */
-.tile {
-    position: absolute;
-    width: 256px;
-    height: 256px;
-    z-index: 0;
-}
-
+.tile { position:absolute; width:256px; height:256px; z-index:0; }
 /* --- Inventory Panel --- */
-#inventoryPanel {
-    position: fixed;
-    bottom: 0;
-    left: 0;
-    width: 100%;
-    max-height: 50%;
-    background: rgba(175, 228, 222, 0.95);
-    color: black;
-    overflow-x: auto;
-    overflow-y: hidden;
-    padding: 10px;
-    display: flex;
-    flex-wrap: nowrap;
-    align-items: flex-start;
-    gap: 10px;
-    z-index: 100;
-    box-shadow: 0 -5px 15px rgba(0,0,0,0.5);
-    display: none;
-}
-
+#inventoryPanel { position:fixed; bottom:0; left:0; width:100%; max-height:50%; background:rgba(175,228,222,0.95); color:black; overflow-x:auto; overflow-y:hidden; padding:10px; display:flex; flex-wrap:nowrap; align-items:flex-start; gap:10px; z-index:100; box-shadow:0 -5px 15px rgba(0,0,0,0.5); display:none; }
 /* --- Wizard card --- */
-.wizard-card {
-    border: 1px solid #444;
-    padding: 5px;
-    background: lightblue;
-    width: 120px;
-    text-align: center;
-    border-radius: 8px;
-    flex: 0 0 auto;
-}
-.wizard-name { font-weight: bold; margin-bottom: 5px; }
-.wizard-color {
-    width: 30px;
-    height: 30px;
-    border-radius: 50%;
-    margin: 5px auto;
-}
-.wizard-stars { margin: 5px 0; }
-.wizard-stats div {
-    font-size: 12px;
-    margin: 2px 0;
-}
-.stat-bar {
-    display: inline-block;
-    height: 6px;
-    background: limegreen;
-    margin-left: 5px;
-    border-radius: 3px;
-}
-
+.wizard-card { border:1px solid #444; padding:5px; background:lightblue; width:120px; text-align:center; border-radius:8px; flex:0 0 auto; }
+.wizard-name { font-weight:bold; margin-bottom:5px; }
+.wizard-color { width:30px; height:30px; border-radius:50%; margin:5px auto; }
+.wizard-stars { margin:5px 0; }
+.wizard-stats div { font-size:12px; margin:2px 0; }
+.stat-bar { display:inline-block; height:6px; background:limegreen; margin-left:5px; border-radius:3px; }
 /* --- Inventory Button --- */
-#inventoryButton {
-    position: fixed;
-    bottom: 10px;
-    right: 10px;
-    z-index: 150;
-    width: 50px;
-    height: 50px;
-    border: none;
-    background: #ff8800;
-    color: white;
-    font-weight: bold;
-    border-radius: 50%;
-    cursor: pointer;
-    font-size: 20px;
-}
-
+#inventoryButton { position:fixed; bottom:10px; right:10px; z-index:150; width:50px; height:50px; border:none; background:#ff8800; color:white; font-weight:bold; border-radius:50%; cursor:pointer; font-size:20px; }
 /* --- Save Button --- */
-#savebutton {
-    position: fixed;
-    bottom: 10px;
-    left: 10px;
-    z-index: 150;
-}
-
+#savebutton { position:fixed; bottom:10px; left:10px; z-index:150; }
 /* --- Raid UI --- */
-#raidUI {
-    position: fixed;
-    top: 10px;
-    right: 10px;
-    z-index: 300;
-    display: flex;
-    flex-direction: column;
-    gap: 5px;
-}
-#raidUI button {
-    padding: 5px 10px;
-    font-weight: bold;
-    border-radius: 5px;
-    cursor: pointer;
-}
+#raidUI { position:fixed; top:10px; right:10px; z-index:300; display:flex; flex-direction:column; gap:5px; }
+#raidUI button { padding:5px 10px; font-weight:bold; border-radius:5px; cursor:pointer; }
+/* --- RAID BATTLE SCREEN --- */
+#raidBattleScreen { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background-image:ur[](https://wallup.net/wp-content/uploads/2016/05/02/274452-architecture-nature-trees-Sun-pillar-stone-Colosseum-Rome-Italy-capital-stairs-sunlight-path-field-grass-arena-arch-building-monuments.jpg); z-index:500; flex-direction:column; align-items:center; justify-content:flex-start; padding-top:50px; }
+#raidTimer { width:60px; height:60px; border-radius:50%; background:orange; color:white; display:flex; align-items:center; justify-content:center; font-size:20px; font-weight:bold; margin-bottom:20px; }
+#raidBossName { color:white; font-size:24px; font-weight:bold; margin-bottom:10px; }
+#raidBossHPContainer { width:80%; height:20px; background:#333; border-radius:10px; margin-bottom:20px; }
+#raidBossHP { height:100%; width:100%; background:red; border-radius:10px; }
+#raidBossCircle { width:120px; height:120px; border-radius:50%; margin-bottom:40px; }
+#raidPlayerWizard { width:60px; height:60px; border-radius:50%; background:yellow; position:relative; }
 </style>
 </head>
 <body>
-
 <!-- Map and player -->
 <div id="map">
     <div id="player"></div>
@@ -194,12 +57,12 @@ html, body {
 <div id="inventoryPanel"></div>
 <button id="inventoryButton">O</button>
 <div id="savebutton">
-    <button onclick="downloaad(inventory)" style="color:white;background-color:lightblue;">Save</button>
+    <button onclick="downloadInventory()" style="color:white;background-color:lightblue;">Save</button>
 </div>
 <input type="file" id="loadFileInput" style="display:none;" accept=".wizard">
 
 <!-- Import Inventory -->
-<div style="position: fixed; bottom: 80px; right: 10px; z-index: 200;">
+<div style="position:fixed; bottom:80px; right:10px; z-index:200;">
     <button onclick="loadInventoryFromFile()" style="color:white;background-color:lightblue;">Import</button>
 </div>
 
@@ -209,56 +72,42 @@ html, body {
     <button onclick="joinRaid()">Join Raid</button>
 </div>
 
+<!-- RAID BATTLE SCREEN -->
+<div id="raidBattleScreen">
+    <div id="raidTimer">300</div>
+    <div id="raidBossName">Boss</div>
+    <div id="raidBossHPContainer"><div id="raidBossHP"></div></div>
+    <div id="raidBossCircle"></div>
+    <div id="raidPlayerWizard">
+        <div class="eye" style="position:absolute; width:8px; height:8px; background:white; border-radius:50%; top:15px; left:10px;"></div>
+        <div class="eye" style="position:absolute; width:8px; height:8px; background:white; border-radius:50%; top:15px; right:10px;"></div>
+        <div class="hat" style="position:absolute; width:20px; height:20px; background:white; border-radius:50%; top:-10px; left:50%; transform:translateX(-50%); border:2px solid black;"></div>
+    </div>
+</div>
+
+<!-- CATCH SCREEN -->
+<div id="catchScreen" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background-image:ur[](https://images2.alphacoders.com/117/11762.jpg); z-index:700; overflow:hidden;">
+    <div id="catchWizardBall" style="position:absolute; top:30%; left:50%; width:100px; height:100px; border-radius:50%; transform:translateX(-50%);"></div>
+    <div id="throwBall" style="position:absolute; bottom:80px; left:50%; width:60px; height:60px; background:orange; border-radius:50%; transform:translateX(-50%); cursor:pointer;"></div>
+    <button onclick="closeCatchScreen()" style="position:absolute; top:20px; right:20px; z-index:710;">X</button>
+</div>
+
+<script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
+
 <script>
-// --- MAP ---
+// ====================== CORE GAME ======================
 const TILE_SIZE = 256;
 let zoom = 15;
 let map = document.getElementById('map');
 let player = document.getElementById('player');
 let mapTiles = [];
-
-// --- GAME DATA ---
 let fireballs = 30;
 let wizardIdCounter = 1;
 const wizards = {};
 const spawnedBalls = new Set();
-const inventory = [];
+let inventory = [];
 
-// --- Inventory Load/Save ---
-function downloaad(inventory) {
-    const jsonString = JSON.stringify(inventory,null,2);
-    const blob = new Blob([jsonString], { type: "application/json" });
-    const link = document.createElement("a");
-    link.href = URL.createObjectURL(blob);
-    link.download = prompt("Name your save file")+".wizard";
-    link.click();
-    URL.revokeObjectURL(link.href);
-}
-
-function loadInventoryFromFile() {
-    const fileInput = document.getElementById('loadFileInput');
-    fileInput.click();
-    fileInput.onchange = () => {
-        const file = fileInput.files[0];
-        if (!file) return;
-        const reader = new FileReader();
-        reader.onload = (e) => {
-            try {
-                const data = JSON.parse(e.target.result);
-                if (Array.isArray(data)) {
-                    inventory.length = 0;
-                    inventory.push(...data);
-                    alert('Account loaded! Total wizards: ' + inventory.length);
-                } else alert('Invalid JSON format: expected an array.');
-            } catch(err) {
-                alert('Error parsing JSON: '+err.message);
-            }
-        };
-        reader.readAsText(file);
-    }
-}
-
-// --- Map Functions ---
+// ====================== MAP ======================
 function latLngToTile(lat,lng,zoom) {
     const n = Math.pow(2, zoom);
     let x = Math.floor((lng + 180)/360 * n);
@@ -267,10 +116,8 @@ function latLngToTile(lat,lng,zoom) {
     y = Math.max(0, Math.min(y,n-1));
     return {x,y};
 }
-
 function drawMap(lat,lng) {
-    mapTiles.forEach(t=>t.remove());
-    mapTiles=[];
+    mapTiles.forEach(t=>t.remove()); mapTiles=[];
     const cols = Math.ceil(window.innerWidth / TILE_SIZE)+2;
     const rows = Math.ceil(window.innerHeight / TILE_SIZE)+2;
     const centerTile = latLngToTile(lat,lng,zoom);
@@ -290,1416 +137,381 @@ function drawMap(lat,lng) {
     player.style.left = window.innerWidth/2+"px";
     player.style.top = window.innerHeight/2+"px";
 }
-
 async function updateMapWithCurrentLocation() {
     if (navigator.geolocation){
         navigator.geolocation.getCurrentPosition(pos=>{
-            const lat=pos.coords.latitude;
-            const lng=pos.coords.longitude;
-            drawMap(lat,lng);
-        }, async err=>{
-            console.warn("GPS failed:", err.message);
+            drawMap(pos.coords.latitude, pos.coords.longitude);
+        }, async () => {
             try{
                 const res=await fetch("https://api.codetabs.com/v1/geolocation/json");
                 const data=await res.json();
-                if(data && typeof data.latitude==="number" && typeof data.longitude==="number"){
-                    drawMap(data.latitude,data.longitude);
-                }
-            }catch(e){console.error("IP fallback failed",e);}
-        }, {enableHighAccuracy:true,timeout:5000,maximumAge:0});
+                drawMap(data.latitude,data.longitude);
+            }catch(e){}
+        }, {enableHighAccuracy:true,timeout:5000});
     }
 }
-
 updateMapWithCurrentLocation();
 setInterval(updateMapWithCurrentLocation,30000);
 
-// --- Wizard Spawn ---
-function getRandomColor(){
-    const colors=['red','green','blue','purple','yellow','gold'];
-    return colors[Math.floor(Math.random()*colors.length)];
-}
-
+// ====================== WIZARDS & INVENTORY ======================
+function getRandomColor(){ return ['red','green','blue','purple','yellow','gold'][Math.floor(Math.random()*6)]; }
 function spawnWizardBall(x,y,wizardData=null){
     if(!wizardData){
-        wizardData = {id: wizardIdCounter++, iv:`${Math.floor(Math.random()*10)}/${Math.floor(Math.random()*10)}/${Math.floor(Math.random()*10)}`, color:getRandomColor(), name:'Wizard '+wizardIdCounter};
+        wizardData = {id: wizardIdCounter++, iv:`${Math.floor(Math.random()*10)}/${Math.floor(Math.random()*10)}/${Math.floor(Math.random()*10)}`, color:getRandomColor(), name:'Wizard '+wizardIdCounter, shape:'circle'};
     }
     wizards[wizardData.id] = wizardData;
     const ball=document.createElement('div');
     ball.className='red-ball';
-    ball.style.left=x+'px';
-    ball.style.top=y+'px';
+    ball.style.left=x+'px'; ball.style.top=y+'px';
     ball.style.background=wizardData.color;
-    const leftEye=document.createElement('div');
-    leftEye.className='eye left';
-    const rightEye=document.createElement('div');
-    rightEye.className='eye right';
-    const hat=document.createElement('div');
-    hat.className='hat';
-    ball.appendChild(leftEye);
-    ball.appendChild(rightEye);
-    ball.appendChild(hat);
+    ball.innerHTML = `<div class="eye left"></div><div class="eye right"></div><div class="hat"></div>`;
     ball.addEventListener('click',()=>{catchWizard(ball,wizardData)});
     map.appendChild(ball);
     spawnedBalls.add(ball);
-    return ball;
 }
-
 function despawnWizardBall(ball,wizardData){
-    if(spawnedBalls.has(ball)){
-        ball.remove();
-        spawnedBalls.delete(ball);
-        delete wizards[wizardData.id];
-    }
+    if(spawnedBalls.has(ball)){ ball.remove(); spawnedBalls.delete(ball); delete wizards[wizardData.id]; }
 }
+function addToInventory(wizardData){ inventory.push(wizardData); }
 
-function addToInventory(wizardData){
-    inventory.push(wizardData);
-    console.log('Gotcha!',wizardData);
-}
-
-
-
-// --- Inventory UI ---
+// Inventory UI
 const inventoryPanel=document.getElementById("inventoryPanel");
 const inventoryButton=document.getElementById("inventoryButton");
 function createWizardCard(wizardData){
     const card=document.createElement("div"); card.className="wizard-card";
     const nameDiv=document.createElement("div"); nameDiv.className="wizard-name"; nameDiv.textContent=wizardData.name;
-    const colorDiv=document.createElement("div"); colorDiv.className="wizard-color"; colorDiv.style.background=wizardData.color;
+    const colorDiv=document.createElement("div"); colorDiv.className="wizard-color"; 
+    colorDiv.style.background=wizardData.color;
+    if(wizardData.shape==="octagon"){
+        colorDiv.style.clipPath="polygon(30% 0%,70% 0%,100% 30%,100% 70%,70% 100%,30% 100%,0% 70%,0% 30%)";
+        colorDiv.style.borderRadius="0";
+    }
     const ivParts=wizardData.iv.split("/").map(n=>parseInt(n));
-    const totalIV=ivParts.reduce((a,b)=>a+b,0); const maxIV=30;
-    const starDiv=document.createElement("div"); starDiv.className="wizard-stars"; starDiv.textContent="⭐".repeat(Math.ceil((totalIV/maxIV)*3));
+    const totalIV=ivParts.reduce((a,b)=>a+b,0);
+    const starDiv=document.createElement("div"); starDiv.className="wizard-stars"; starDiv.textContent="⭐".repeat(Math.ceil((totalIV/30)*3));
     const statsDiv=document.createElement("div"); statsDiv.className="wizard-stats";
-    ["Atk","Def","Spd"].forEach((s,i)=>{
+    ["Atk","Def","Spd"].forEach((s,i)=>{ 
         const statDiv=document.createElement("div"); statDiv.textContent=s+": ";
         const bar=document.createElement("div"); bar.className="stat-bar"; bar.style.width=(ivParts[i]/10*100)+"%";
         statDiv.appendChild(bar); statsDiv.appendChild(statDiv);
     });
-    card.appendChild(nameDiv); card.appendChild(colorDiv); card.appendChild(starDiv); card.appendChild(statsDiv);
+    card.append(nameDiv,colorDiv,starDiv,statsDiv);
     return card;
 }
-function openInventory(){inventoryPanel.innerHTML="";inventory.forEach(w=>inventoryPanel.appendChild(createWizardCard(w)));inventoryPanel.style.display="flex";}
-function closeInventory(){inventoryPanel.style.display="none";}
-inventoryButton.addEventListener("click",()=>{if(inventoryPanel.style.display==="none") openInventory(); else closeInventory();});
+function openInventory(){ inventoryPanel.innerHTML=""; inventory.forEach(w=>inventoryPanel.appendChild(createWizardCard(w))); inventoryPanel.style.display="flex"; }
+function closeInventory(){ inventoryPanel.style.display="none"; }
+inventoryButton.addEventListener("click",()=>{ inventoryPanel.style.display==="none" ? openInventory() : closeInventory(); });
 
-// Spawn some initial wizards
+// Save / Load
+function downloadInventory(){
+    const jsonString = JSON.stringify(inventory,null,2);
+    const blob = new Blob([jsonString], { type: "application/json" });
+    const link = document.createElement("a");
+    link.href = URL.createObjectURL(blob);
+    link.download = prompt("Name your save file")+".wizard";
+    link.click();
+}
+function loadInventoryFromFile(){
+    const fileInput = document.getElementById('loadFileInput');
+    fileInput.click();
+    fileInput.onchange = () => {
+        const file = fileInput.files[0];
+        if(!file) return;
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            try {
+                const data = JSON.parse(e.target.result);
+                if(Array.isArray(data)){ inventory = data; alert('Loaded '+inventory.length+' wizards!'); if(inventoryPanel.style.display!=="none") openInventory(); }
+            } catch(err){ alert('Error: '+err.message); }
+        };
+        reader.readAsText(file);
+    };
+}
+
+// Spawn initial + periodic
 spawnWizardBall(200,200); spawnWizardBall(400,100); spawnWizardBall(600,300);
-setInterval(()=>{const x=Math.random()*(window.innerWidth-50);const y=Math.random()*(window.innerHeight-50); spawnWizardBall(x,y);},10000);
-setInterval(()=>{fireballs+=1;console.log("Fireballs:",fireballs)},8000);
+setInterval(()=>{ spawnWizardBall(Math.random()*(window.innerWidth-50), Math.random()*(window.innerHeight-50)); },10000);
+setInterval(()=>{ fireballs++; },8000);
 
-// --- RAID SYSTEM ---
+// ====================== CATCH SCREEN ======================
+
+const catchWizardElem = document.getElementById("catchWizardBall");
+const throwBall = document.getElementById("throwBall");
+let currentCatchWizard = null;
+
+function openCatchScreen(wizardData) {
+    currentCatchWizard = wizardData;
+    catchScreen.style.display = "block";
+    catchWizardElem.style.background = wizardData.color;
+    catchWizardElem.style.clipPath = wizardData.shape==="octagon" ? "polygon(30% 0%,70% 0%,100% 30%,100% 70%,70% 100%,30% 100%,0% 70%,0% 30%)" : "none";
+    catchWizardElem.style.borderRadius = wizardData.shape==="octagon" ? "0" : "50%";
+    throwBall.style.transition = "none";
+    throwBall.style.bottom = "80px";
+}
+function closeCatchScreen(){ catchScreen.style.display="none"; }
+
+throwBall.addEventListener("click", () => {
+    throwBall.style.transition = "all 0.6s ease";
+    throwBall.style.bottom = "55%";
+    setTimeout(() => {
+        const caught = Math.random() < 0.75;
+        if(caught){
+            const name = prompt("Name your wizard:", currentCatchWizard.name) || currentCatchWizard.name;
+            currentCatchWizard.name = name.trim();
+            inventory.push(currentCatchWizard);
+            alert("CAUGHT!\n"+currentCatchWizard.name+"\nIV: "+currentCatchWizard.iv);
+            if(inventoryPanel.style.display!=="none") openInventory();
+            closeCatchScreen();
+        } else {
+            alert("Escaped!");
+            throwBall.style.bottom = "80px";
+        }
+    },700);
+});
+
+function catchWizard(ball, wizardData){
+    if(fireballs>0){
+        fireballs--;
+        openCatchScreen(wizardData);
+        despawnWizardBall(ball,wizardData);
+    } else alert("No fireballs left!");
+}
+
+// ====================== GLOBAL RAID SYSTEM (PUBLIC MQTT - NO API KEY) ======================
+const MQTT_BROKER = "wss://broker.hivemq.com:8884/mqtt";
+let mqttClient = null;
 let raidActive = null;
-const MAX_PLAYERS=20;
-const RAID_TIME=300;
+let raidHost = false;
+let currentRaidCode = null;
+const MAX_PLAYERS = 20;
+const RAID_TIME = 300;
+const RAID_TOPIC_PREFIX = "wizard-raid/";
 
-function randomLetter(){return "ABCDEFGHIJKLMNOPQRSTUVWXYZ"[Math.floor(Math.random()*26)];}
-function randomRaidColor(){return ["red","blue","green","purple","orange","pink","cyan"][Math.floor(Math.random()*7)];}
-function createRaidBoss(hp=2000){const shiny=Math.random()<0.1; return {name:"Polygon-"+randomLetter(),color:shiny?"gold":randomRaidColor(),shiny:shiny,maxHp:hp,hp:hp};}
+function generateRaidCode(){ return Math.random().toString(36).substring(2,8).toUpperCase(); }
+function randomRaidColor(){ return ["red","blue","green","purple","orange","pink","cyan"][Math.floor(Math.random()*7)]; }
+function createRaidBoss(hp=2000){
+    const shiny = Math.random()<0.1;
+    return { name:"Polygon-"+ "ABCDEFGHIJKLMNOPQRSTUVWXYZ"[Math.floor(Math.random()*26)], color:shiny?"gold":randomRaidColor(), shiny, maxHp:hp, hp:hp, shape:"octagon" };
+}
 
+// Connect to public MQTT broker (works worldwide, no key, no signup)
+function connectMQTT(code){
+    if(mqttClient) mqttClient.end();
+    mqttClient = mqtt.connect(MQTT_BROKER, { keepalive: 30 });
+    
+    mqttClient.on('connect', () => {
+        console.log("✅ Connected to global MQTT broker");
+        mqttClient.subscribe(RAID_TOPIC_PREFIX + code);
+        
+        if(raidHost){
+            // Host sends initial state
+            mqttClient.publish(RAID_TOPIC_PREFIX + code, JSON.stringify({type:"raidState", raid:raidActive}));
+        } else {
+            // Joiner announces themselves
+            mqttClient.publish(RAID_TOPIC_PREFIX + code, JSON.stringify({
+                type:"joinRaid",
+                playerName: prompt("Your trainer name?") || "Player",
+                wizards: Array.from({length:6},(_,i)=>({name:`Wizard-${i+1}`, damagePerSec:5}))
+            }));
+        }
+    });
+
+    mqttClient.on('message', (topic, payload) => {
+        try {
+            const msg = JSON.parse(payload.toString());
+            if(msg.type === "joinRaid" && raidHost && raidActive){
+                if(raidActive.players.length >= MAX_PLAYERS) return;
+                raidActive.players.push({name:msg.playerName, wizards:msg.wizards});
+                mqttClient.publish(RAID_TOPIC_PREFIX + code, JSON.stringify({type:"raidState", raid:raidActive}));
+                alert(msg.playerName + " joined the raid!");
+            }
+            if(msg.type === "raidState"){
+                raidActive = msg.raid;
+                showRaidBattleScreen(raidActive.boss);
+                updateRaidUI();
+            }
+            if(msg.type === "raidEnded"){
+                raidScreen.style.display = "none";
+                if(msg.boss && msg.boss.hp <= 0) collectPolygonFromRaid(msg.boss);
+                raidActive = null;
+                if(mqttClient) mqttClient.end();
+            }
+        } catch(e){}
+    });
+}
+
+// Create / Join
 function createRaid(){
-    const code=Math.random().toString(36).substring(2,8).toUpperCase();
-    raidActive={code:code,boss:createRaidBoss(),players:[],timer:RAID_TIME,intervalId:null};
-    alert("Raid Created!\nCode: "+code+"\nBoss: "+raidActive.boss.name+"\nColor: "+raidActive.boss.color+(raidActive.boss.shiny?" ✨SHINY!":"")+"\nMax HP: "+raidActive.boss.hp);
+    raidHost = true;
+    currentRaidCode = generateRaidCode();
+    raidActive = {
+        code: currentRaidCode,
+        boss: createRaidBoss(),
+        players: [{name: prompt("Your trainer name?")||"Host", wizards:Array.from({length:6},(_,i)=>({name:`Wizard-${i+1}`,damagePerSec:5}))}],
+        timer: RAID_TIME
+    };
+    connectMQTT(currentRaidCode);
+    alert(`🌍 RAID CREATED!\nCode: ${currentRaidCode}\nShare this code with anyone in the world!\nBoss: ${raidActive.boss.name}`);
+    showRaidBattleScreen(raidActive.boss);
+    startRaidBattleLoop();
 }
 
 function joinRaid(){
-    if(!raidActive){alert("No active raid exists."); return;}
-    if(raidActive.players.length>=MAX_PLAYERS){alert("Raid full!"); return;}
-    const code=prompt("Enter raid code:");
-    if(code!==raidActive.code){alert("Wrong code."); return;}
-    const playerName=prompt("Your trainer name?");
-    if(!playerName) return;
-    const battleWizards=Array.from({length:6},(_,i)=>({name:`Wizard-${i+1}`,damagePerSec:5}));
-    raidActive.players.push({name:playerName,wizards:battleWizards});
-    alert(playerName+" joined raid!\nPlayers: "+raidActive.players.map(p=>p.name).join(", "));
-    if(!raidActive.intervalId) startRaidBattleWithScreen();
+    raidHost = false;
+    const code = prompt("Enter raid code:").toUpperCase().trim();
+    if(!code) return;
+    currentRaidCode = code;
+    connectMQTT(code);
+    showRaidBattleScreen({name:"Waiting for host...", color:"gray"}); // placeholder until state arrives
 }
 
-function startRaidBattle(){
-    if(!raidActive) return;
-    raidActive.intervalId=setInterval(()=>{
-        if(!raidActive||raidActive.players.length===0) return;
-        let totalDPS=0;
-        raidActive.players.forEach(p=>p.wizards.forEach(w=>totalDPS+=w.damagePerSec));
-        raidActive.boss.hp-=totalDPS;
+// Battle loop (only host runs the logic)
+function startRaidBattleLoop(){
+    if(!raidHost || !raidActive) return;
+    showRaidBattleScreen(raidActive.boss);
+    raidActive.intervalId = setInterval(() => {
+        if(!raidActive) return;
+        
+        let totalDPS = 0;
+        raidActive.players.forEach(p => p.wizards.forEach(w => totalDPS += w.damagePerSec));
+        raidActive.boss.hp = Math.max(0, raidActive.boss.hp - totalDPS);
         raidActive.timer--;
-        console.log(`Boss HP: ${Math.max(raidActive.boss.hp,0)} | Time left: ${raidActive.timer}s | Players: ${raidActive.players.length}`);
-        if (raidActive.boss.hp <= 0) {
- 		   collectPolygonFromRaid(raidActive.boss); // <-- add this
- 		   clearInterval(raidActive.intervalId);
- 		   raidActive = null;
-		}
-        else if(raidActive.timer<=0){
-            alert("⏱️ Time's up! Raid failed.\nBoss remaining HP: "+raidActive.boss.hp);
-            clearInterval(raidActive.intervalId); raidActive=null;
+
+        updateRaidUI();
+
+        // Broadcast full state to everyone
+        if(mqttClient) mqttClient.publish(RAID_TOPIC_PREFIX + currentRaidCode, JSON.stringify({type:"raidState", raid:raidActive}));
+
+        if(raidActive.boss.hp <= 0){
+            clearInterval(raidActive.intervalId);
+            if(mqttClient) mqttClient.publish(RAID_TOPIC_PREFIX + currentRaidCode, JSON.stringify({type:"raidEnded", boss:raidActive.boss}));
+            collectPolygonFromRaid(raidActive.boss);
+            raidScreen.style.display = "none";
+            raidActive = null;
+        } else if(raidActive.timer <= 0){
+            clearInterval(raidActive.intervalId);
+            if(mqttClient) mqttClient.publish(RAID_TOPIC_PREFIX + currentRaidCode, JSON.stringify({type:"raidEnded"}));
+            alert("⏱️ Time's up! Raid failed.");
+            raidScreen.style.display = "none";
+            raidActive = null;
         }
-    },1000);
+    }, 1000);
 }
-function collectPolygonFromRaid(boss) {
-    // Generate random IVs 10-15
-    const iv = [
-        Math.floor(Math.random() * 6) + 6, // Atk
-        Math.floor(Math.random() * 6) + 6, // Def
-        Math.floor(Math.random() * 6) + 6  // Spd
-    ].join("/");
 
-    // Random color (or golden if shiny)
-    const color = boss.shiny ? "gold" : boss.color;
-
-    // Construct Polygon object
-    const polygon = {
-        id: "polygon-" + Date.now(),  // unique id
-        name: boss.name,
-        color: color,
-        iv: iv,
-        shiny: boss.shiny
-    };
-
-    // Add to inventory
-    openCatchScreen(polygon);
-
-
-
-    // Update inventory UI if open
-    if (inventoryPanel.style.display !== "none") openInventory();
+function updateRaidUI(){
+    raidTimerElem.textContent = raidActive.timer;
+    updateRaidHP(raidActive.boss.hp, raidActive.boss.maxHp);
 }
-</script>
-<!-- --- RAID BATTLE SCREEN --- -->
-<div id="raidBattleScreen" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background-image:url(https://wallup.net/wp-content/uploads/2016/05/02/274452-architecture-nature-trees-Sun-pillar-stone-Colosseum-Rome-Italy-capital-stairs-sunlight-path-field-grass-arena-arch-building-monuments.jpg); z-index:500; flex-direction:column; align-items:center; justify-content:flex-start; padding-top:50px;">
-    <!-- Timer as orange ball -->
-    <div id="raidTimer" style="width:60px; height:60px; border-radius:50%; background:orange; color:white; display:flex; align-items:center; justify-content:center; font-size:20px; font-weight:bold; margin-bottom:20px;">0</div>
 
-    <!-- Boss name -->
-    <div id="raidBossName" style="color:white; font-size:24px; font-weight:bold; margin-bottom:10px;">Boss</div>
+// RAID SCREEN ELEMENTS
 
-    <!-- Boss HP bar -->
-    <div style="width:80%; height:20px; background:#333; border-radius:10px; margin-bottom:20px;">
-        <div id="raidBossHP" style="height:100%; width:100%; background:red; border-radius:10px;"></div>
-    </div>
-
-    <!-- Boss circle -->
-    <div id="raidBossCircle" style="width:120px; height:120px; border-radius:50%; background:red; margin-bottom:40px;"></div>
-
-    <!-- Yellow wizard attacking -->
-    <div id="raidPlayerWizard" style="width:60px; height:60px; border-radius:50%; background:yellow; position:relative;">
-        <div class="eye" style="position:absolute; width:8px; height:8px; background:white; border-radius:50%; top:15px; left:10px;"></div>
-        <div class="eye" style="position:absolute; width:8px; height:8px; background:white; border-radius:50%; top:15px; right:10px;"></div>
-        <div class="hat" style="position:absolute; width:20px; height:20px; background:white; border-radius:50%; top:-10px; left:50%; transform:translateX(-50%); border:2px solid black;"></div>
-    </div>
-</div>
-
-<script>
-
-
-// --- RAID BATTLE SCREEN LOGIC ---
-const raidScreen = document.getElementById('raidBattleScreen');
 const raidTimerElem = document.getElementById('raidTimer');
 const raidBossNameElem = document.getElementById('raidBossName');
 const raidBossHPElem = document.getElementById('raidBossHP');
 const raidBossCircleElem = document.getElementById('raidBossCircle');
 
-function showRaidBattleScreen(boss) {
-    const raidScreen = document.getElementById('raidBattleScreen');
-    const raidBossNameElem = document.getElementById('raidBossName');
-    const raidBossHPElem = document.getElementById('raidBossHP');
-    const raidBossCircleElem = document.getElementById('raidBossCircle');
-
-    raidScreen.style.display = 'flex'; // Show the raid UI
-    raidBossNameElem.textContent = boss.name;
-    raidBossCircleElem.style.background = boss.color;
-    raidBossHPElem.style.width = (boss.hp / boss.maxHp * 100) + '%';
-}
-
-// Update the boss HP bar dynamically
-function updateRaidHP(currentHP, maxHP) {
-    const raidBossHPElem = document.getElementById('raidBossHP');
-    raidBossHPElem.style.width = (currentHP / maxHP * 100) + '%';
-}
-
-// --- CODE GENERATOR ---
-// --- P2P RAID LOGIC (Wi-Fi / localStorage) ---
-
-let raidChannelCode = null;
-let raidHost = false;
-
-// Generate a raid code
-function generateRaidCode() {
-    return Math.random().toString(36).substring(2,10).toUpperCase();
-}
-
-// Sync raid state across tabs/devices
-function syncRaidState() {
-    if (raidChannelCode && raidActive) {
-        localStorage.setItem("raid_" + raidChannelCode, JSON.stringify(raidActive));
-    }
-}
-
-// Listen for updates from other tabs/devices
-window.addEventListener("storage", (e) => {
-    if (!raidChannelCode) return;
-    if (e.key === "raid_" + raidChannelCode && e.newValue) {
-        const incoming = JSON.parse(e.newValue);
-        raidActive = incoming;
-        if (raidActive) {
-            showRaidBattleScreen(raidActive.boss);
-            raidTimerElem.textContent = raidActive.timer;
-            updateRaidHP(raidActive.boss.hp, raidActive.boss.maxHp);
-        }
-    }
-});
-
-// Create Raid (Host)
-// --- P2P RAID via BroadcastChannel ---
-const raidChannel = new BroadcastChannel("wizardRaid");
-
-// Track raid state
-
-raidActive = null; // overwrite previous global
-
-// --- Host creates a raid ---
-function createRaid() {
-    const code = Math.random().toString(36).substring(2, 8).toUpperCase();
-    raidActive = {
-        code,
-        boss: createRaidBoss(), 
-        players: [{ name: "Host", wizards: Array.from({length:6}, (_,i)=>({name:`Wizard-${i+1}`,damagePerSec:5})) }],
-        timer: RAID_TIME,
-        intervalId: null
-    };
-    raidHost = true;
-
-    // Broadcast raid creation
-    raidChannel.postMessage({ type: "create", raid: raidActive });
-    alert(`Raid Created! Code: ${code}\nBoss: ${raidActive.boss.name} (${raidActive.boss.color}${raidActive.boss.shiny?" ✨SHINY!":""})`);
-    
-    // Start battle UI
-    startRaidBattleWithScreen();
-}
-
-// --- Join raid on another tab/device ---
-function joinRaid() {
-    const code = prompt("Enter raid code:");
-    if (!code) return;
-
-    // Send join request
-    const playerName = prompt("Your trainer name?");
-    if (!playerName) return;
-
-    raidChannel.postMessage({ 
-        type: "joinRequest", 
-        code: code.toUpperCase(), 
-        player: { name: playerName, wizards: Array.from({length:6}, (_,i)=>({name:`Wizard-${i+1}`,damagePerSec:5})) } 
-    });
-}
-
-// --- Listen for raid messages ---
-raidChannel.onmessage = (event) => {
-    const data = event.data;
-
-    // A new raid is created on another device
-    if (data.type === "create" && !raidHost) {
-        raidActive = data.raid;
-        alert(`Raid available! Code: ${raidActive.code}\nBoss: ${raidActive.boss.name} (${raidActive.boss.color}${raidActive.boss.shiny?" ✨SHINY!":""})`);
-        showRaidBattleScreen(raidActive.boss);
-    }
-
-    // Another player requests to join our raid
-    if (data.type === "joinRequest" && raidHost && raidActive && data.code === raidActive.code) {
-        raidActive.players.push(data.player);
-        console.log(`${data.player.name} joined your raid!`);
-        alert(`${data.player.name} joined your raid!`);
-        // Broadcast updated state to everyone
-        raidChannel.postMessage({ type: "update", raid: raidActive });
-    }
-
-    // Receive updated raid state from host
-    if (data.type === "update" && !raidHost) {
-        raidActive = data.raid;
-        showRaidBattleScreen(raidActive.boss);
-        console.log("Raid updated:", raidActive.players.map(p=>p.name));
-    }
-};
-
-// Battle loop with UI
-function startRaidBattleWithScreen() {
-    if (!raidActive) return;
-
-    showRaidBattleScreen(raidActive.boss);
-
-    raidActive.intervalId = setInterval(() => {
-        if (!raidActive || raidActive.players.length===0) return;
-
-        let totalDPS = 0;
-        raidActive.players.forEach(p => p.wizards.forEach(w => totalDPS += w.damagePerSec));
-
-        raidActive.boss.hp -= totalDPS;
-        raidActive.timer--;
-
-        raidTimerElem.textContent = raidActive.timer;
-        updateRaidHP(raidActive.boss.hp, raidActive.boss.maxHp);
-
-        syncRaidState();
-
-        if (raidActive.boss.hp <= 0) {
-            clearInterval(raidActive.intervalId);
-            raidScreen.style.display = 'none';
-            collectPolygonFromRaid(raidActive.boss);
-            localStorage.removeItem("raid_" + raidChannelCode);
-            raidActive = null;
-        } else if (raidActive.timer <= 0) {
-            alert("⏱️ Time's up! Raid failed.");
-            clearInterval(raidActive.intervalId);
-            raidScreen.style.display = 'none';
-            localStorage.removeItem("raid_" + raidChannelCode);
-            raidActive = null;
-        }
-    },1000);
-}
-// Replace your startRaidBattle() calls with startRaidBattleWithScreen() to show this UI
-</script>
-
-
-
-
-<!-- --- CATCH SCREEN --- -->
-<div id="catchScreen" style="
-display:none;
-position:fixed;
-top:0;
-left:0;
-width:100%;
-height:100%;
-background-image:url(https://images2.alphacoders.com/117/11762.jpg);
-z-index:700;
-overflow:hidden;
-">
-
-    <div id="catchWizardBall" style="
-    position:absolute;
-    top:30%;
-    left:50%;
-    width:100px;
-    height:100px;
-    border-radius:50%;
-    transform:translateX(-50%);
-    ">
-        <div class="eye" style="position:absolute;width:12px;height:12px;background:white;border-radius:50%;top:30px;left:20px;"></div>
-        <div class="eye" style="position:absolute;width:12px;height:12px;background:white;border-radius:50%;top:30px;right:20px;"></div>
-        <div class="hat" style="position:absolute;width:30px;height:30px;background:white;border-radius:50%;top:-15px;left:50%;transform:translateX(-50%);border:2px solid black;"></div>
-    </div>
-
-    <div id="throwBall" style="
-    position:absolute;
-    bottom:80px;
-    left:50%;
-    width:60px;
-    height:60px;
-    background:orange;
-    border-radius:50%;
-    transform:translateX(-50%);
-    cursor:pointer;
-    "></div>
-
-    <button onclick="closeCatchScreen()" style="
-    position:absolute;
-    top:20px;
-    right:20px;
-    z-index:710;
-    ">X</button>
-
-</div>
-
-<script>
-const catchScreen = document.getElementById("catchScreen");
-const catchWizardElem = document.getElementById("catchWizardBall");
-const throwBall = document.getElementById("throwBall");
-
-let currentCatchWizard = null;
-
-// OPEN CATCH SCREEN
-function openCatchScreen(wizardData) {
-    currentCatchWizard = wizardData;
-
-    catchScreen.style.display = "block";
-    catchWizardElem.style.background = wizardData.color;
-
-    throwBall.style.transition = "none";
-    throwBall.style.left = "50%";
-    throwBall.style.bottom = "80px";
-}
-
-// CLOSE
-function closeCatchScreen() {
-    catchScreen.style.display = "none";
-}
-
-// THROW BALL
-throwBall.addEventListener("click", () => {
-
-    throwBall.style.transition = "all 0.6s ease";
-    throwBall.style.left = "50%";
-    throwBall.style.bottom = "55%";
-
-    setTimeout(() => {
-
-        const caught = Math.random() < 0.75;
-
-        if (caught) {
-            const name = prompt("Name your wizard:", currentCatchWizard.name);
-
-            if (name && name.trim() !== "") {
-                currentCatchWizard.name = name.trim();
-            }
-
-            inventory.push(currentCatchWizard);
-
-            alert(
-                "Caught!\n" +
-                currentCatchWizard.name +
-                "\nIV: " + currentCatchWizard.iv
-            );
-
-            closeCatchScreen();
-
-        } else {
-            alert("Escaped!");
-
-            throwBall.style.transition = "none";
-            throwBall.style.left = "50%";
-            throwBall.style.bottom = "80px";
-        }
-
-    }, 700);
-});
-
-// THIS replaces your old wizard click catch logic
-function catchWizard(ball, wizardData) {
-    if (fireballs > 0) {
-        fireballs--;
-        openCatchScreen(wizardData);
-        despawnWizardBall(ball, wizardData);
-    } else {
-        alert("No fireballs!");
-    }
-}
-</script>
-
-
-
-<script>
-// --- P2P RAIDS USING SIMPLE WEBRTC DATA CHANNEL ---
-let peerConnection = null;
-let dataChannel = null;
-let isHost = false;
-let raidCode = null;
-
-// Create a raid code
-function generateRaidCode() {
-    return Math.random().toString(36).substring(2, 8).toUpperCase();
-}
-
-// HOST: create a raid and a WebRTC offer
-async function hostRaid() {
-    isHost = true;
-    raidCode = generateRaidCode();
-    raidActive = {
-        code: raidCode,
-        boss: createRaidBoss(),
-        players: [],
-        timer: RAID_TIME,
-    };
-    alert(`Raid hosted!\nCode: ${raidCode}\nBoss: ${raidActive.boss.name}`);
-    
-    peerConnection = new RTCPeerConnection();
-    dataChannel = peerConnection.createDataChannel("raidChannel");
-    setupDataChannel();
-
-    // ICE candidates
-    peerConnection.onicecandidate = e => {
-        if(e.candidate) {
-            console.log("ICE candidate:", JSON.stringify(e.candidate));
-        }
-    };
-
-    const offer = await peerConnection.createOffer();
-    await peerConnection.setLocalDescription(offer);
-
-    // Show the offer as JSON for the other phone to paste
-    prompt("Send this offer to the other phone:", JSON.stringify(offer));
-}
-
-// JOINER: join raid using the host’s offer
-async function joinRaidP2P() {
-    const offerStr = prompt("Paste host offer JSON:");
-    if(!offerStr) return;
-    const offer = JSON.parse(offerStr);
-
-    peerConnection = new RTCPeerConnection();
-
-    peerConnection.ondatachannel = e => {
-        dataChannel = e.channel;
-        setupDataChannel();
-    };
-
-    peerConnection.onicecandidate = e => {
-        if(e.candidate) console.log("ICE candidate (joiner):", JSON.stringify(e.candidate));
-    };
-
-    await peerConnection.setRemoteDescription(offer);
-    const answer = await peerConnection.createAnswer();
-    await peerConnection.setLocalDescription(answer);
-
-    // Send answer back to host
-    prompt("Send this answer back to host:", JSON.stringify(answer));
-}
-
-// HOST: after receiving answer from joiner
-async function receiveAnswer(answerStr) {
-    if(!isHost || !peerConnection) return;
-    const answer = JSON.parse(answerStr);
-    await peerConnection.setRemoteDescription(answer);
-    console.log("P2P connected!");
-}
-
-// DATA CHANNEL HANDLER
-function setupDataChannel() {
-    dataChannel.onopen = () => console.log("P2P channel open!");
-    dataChannel.onmessage = e => {
-        const msg = JSON.parse(e.data);
-        console.log("Message received:", msg);
-
-        if(msg.type==="joinRaid") {
-            raidActive.players.push(msg.player);
-            updateRaidScreen();
-            console.log("Players now:", raidActive.players);
-        }
-    };
-}
-
-// Send a message over P2P
-function sendP2PMessage(obj) {
-    if(dataChannel && dataChannel.readyState==="open") {
-        dataChannel.send(JSON.stringify(obj));
-    }
-}
-
-// Example: join raid from joiner side
-function joinRaidWithName(playerName) {
-    if(!dataChannel) { alert("Not connected to host yet."); return; }
-    sendP2PMessage({type:"joinRaid", player:{name:playerName, wizards:Array.from({length:6},(_,i)=>({name:`Wizard-${i+1}`, damagePerSec:5}))}});
-}</script>
-<script>
-// --- Host: battle loop ---
-function startRaidBattleP2P() {
-    if (!isHost || !raidActive) return;
-
-    showRaidBattleScreen(raidActive.boss);
-
-    raidActive.intervalId = setInterval(() => {
-        let totalDPS = 0;
-        raidActive.players.forEach(p => p.wizards.forEach(w => totalDPS += w.damagePerSec));
-
-        raidActive.boss.hp -= totalDPS;
-        raidActive.timer--;
-
-        updateRaidHP(raidActive.boss.hp, raidActive.boss.maxHp);
-        raidTimerElem.textContent = raidActive.timer;
-
-        // Broadcast updated state to joiners
-        sendP2PMessage({ type: "raidUpdate", raid: raidActive });
-
-        if (raidActive.boss.hp <= 0 || raidActive.timer <= 0) {
-            clearInterval(raidActive.intervalId);
-            raidScreen.style.display = 'none';
-            if(raidActive.boss.hp <=0) collectPolygonFromRaid(raidActive.boss);
-            raidActive = null;
-            sendP2PMessage({ type: "raidEnded" });
-        }
-    }, 1000);
-}
-
-// --- Joiner: listen for host updates ---
-function setupDataChannel() {
-    dataChannel.onopen = () => console.log("P2P channel open!");
-    dataChannel.onmessage = e => {
-        const msg = JSON.parse(e.data);
-        if(msg.type==="raidUpdate") {
-            raidActive = msg.raid;
-            showRaidBattleScreen(raidActive.boss);
-            raidTimerElem.textContent = raidActive.timer;
-            updateRaidHP(raidActive.boss.hp, raidActive.boss.maxHp);
-        }
-        if(msg.type==="raidEnded") {
-            alert("Raid ended!");
-            raidActive = null;
-            raidScreen.style.display = 'none';
-        }
-        if(msg.type==="joinRaid") {
-            if(isHost) {
-                raidActive.players.push(msg.player);
-                console.log("Players now:", raidActive.players.map(p=>p.name));
-            }
-        }
-    };
-}</script>
-<script>
-// --- HOST LOGIC ---
-function startHostRaidLoop() {
-    if(!raidActive) return;
-
-    raidActive.intervalId = setInterval(() => {
-        // Sum DPS from all players
-        let totalDPS = 0;
-        raidActive.players.forEach(p => p.wizards.forEach(w => totalDPS += w.damagePerSec));
-
-        raidActive.boss.hp -= totalDPS;
-        raidActive.timer--;
-
-        // Clamp values
-        raidActive.boss.hp = Math.max(0, raidActive.boss.hp);
-        raidActive.timer = Math.max(0, raidActive.timer);
-
-        // Update host UI
-        showRaidBattleScreen(raidActive.boss);
-        raidTimerElem.textContent = raidActive.timer;
-        updateRaidHP(raidActive.boss.hp, raidActive.boss.maxHp);
-
-        // Broadcast full raid state to all joiners
-        broadcastP2P({ type: "raidState", raid: raidActive });
-
-        // End raid if needed
-        if(raidActive.boss.hp === 0 || raidActive.timer === 0){
-            clearInterval(raidActive.intervalId);
-            raidScreen.style.display = 'none';
-            if(raidActive.boss.hp === 0) collectPolygonFromRaid(raidActive.boss);
-            raidActive = null;
-            broadcastP2P({ type: "raidEnded" });
-        }
-
-    }, 1000);
-}
-
-// --- JOINER LOGIC ---
-function handleIncomingP2P(msg){
-    if(msg.type === "raidState"){
-        raidActive = msg.raid; // FULL overwrite
-        showRaidBattleScreen(raidActive.boss);
-        raidTimerElem.textContent = raidActive.timer;
-        updateRaidHP(raidActive.boss.hp, raidActive.boss.maxHp);
-    }
-    if(msg.type === "raidEnded"){
-        alert("Raid ended!");
-        raidActive = null;
-        raidScreen.style.display = 'none';
-    }
-}</script><script>
-// --- HOST LOGIC ---
-function startHostRaidLoop() {
-    if(!raidActive) return;
-
-    raidActive.intervalId = setInterval(() => {
-        // Sum DPS from all players
-        let totalDPS = 0;
-        raidActive.players.forEach(p => p.wizards.forEach(w => totalDPS += w.damagePerSec));
-
-        raidActive.boss.hp -= totalDPS;
-        raidActive.timer--;
-
-        // Clamp values
-        raidActive.boss.hp = Math.max(0, raidActive.boss.hp);
-        raidActive.timer = Math.max(0, raidActive.timer);
-
-        // Update host UI
-        showRaidBattleScreen(raidActive.boss);
-        raidTimerElem.textContent = raidActive.timer;
-        updateRaidHP(raidActive.boss.hp, raidActive.boss.maxHp);
-
-        // Broadcast full raid state to all joiners
-        broadcastP2P({ type: "raidState", raid: raidActive });
-
-        // End raid if needed
-        if(raidActive.boss.hp === 0 || raidActive.timer === 0){
-            clearInterval(raidActive.intervalId);
-            raidScreen.style.display = 'none';
-            if(raidActive.boss.hp === 0) collectPolygonFromRaid(raidActive.boss);
-            raidActive = null;
-            broadcastP2P({ type: "raidEnded" });
-        }
-
-    }, 1000);
-}
-
-// --- JOINER LOGIC ---
-function handleIncomingP2P(msg){
-    if(msg.type === "raidState"){
-        raidActive = msg.raid; // FULL overwrite
-        showRaidBattleScreen(raidActive.boss);
-        raidTimerElem.textContent = raidActive.timer;
-        updateRaidHP(raidActive.boss.hp, raidActive.boss.maxHp);
-    }
-    if(msg.type === "raidEnded"){
-        alert("Raid ended!");
-        raidActive = null;
-        raidScreen.style.display = 'none';
-    }
-}</script>
-<script>
-// --- P2P RAID SYSTEM (Host + Joiner) ---
-
-
-
-// Helper: random raid code
-function generateRaidCode() {
-    return Math.random().toString(36).substring(2,10).toUpperCase();
-}
-
-// Host: start raid loop
-function startHostRaidLoop() {
-    if(!raidActive || !raidHost) return;
-
-    raidActive.intervalId = setInterval(() => {
-        if(!raidActive || raidActive.players.length===0) return;
-
-        let totalDPS = 0;
-        raidActive.players.forEach(p => p.wizards.forEach(w => totalDPS += w.damagePerSec));
-
-        raidActive.boss.hp -= totalDPS;
-        raidActive.timer--;
-
-        raidActive.boss.hp = Math.max(0, raidActive.boss.hp);
-        raidActive.timer = Math.max(0, raidActive.timer);
-
-        // update host UI
-        showRaidBattleScreen(raidActive.boss);
-        raidTimerElem.textContent = raidActive.timer;
-        updateRaidHP(raidActive.boss.hp, raidActive.boss.maxHp);
-
-        // sync to others
-        localStorage.setItem("raid_" + raidChannelCode, JSON.stringify(raidActive));
-
-        if(raidActive.boss.hp === 0 || raidActive.timer === 0){
-            clearInterval(raidActive.intervalId);
-            raidScreen.style.display = 'none';
-            if(raidActive.boss.hp === 0) collectPolygonFromRaid(raidActive.boss);
-            localStorage.removeItem("raid_" + raidChannelCode);
-            raidActive = null;
-        }
-    },1000);
-}
-
-// Joiners: listen for raid updates
-window.addEventListener("storage", (e) => {
-    if(!raidChannelCode) return;
-    if(e.key === "raid_" + raidChannelCode && e.newValue){
-        const incoming = JSON.parse(e.newValue);
-        raidActive = incoming;
-        if(raidActive){
-            showRaidBattleScreen(raidActive.boss);
-            raidTimerElem.textContent = raidActive.timer;
-            updateRaidHP(raidActive.boss.hp, raidActive.boss.maxHp);
-        }
-    }
-});
-
-// Create Raid (host)
-function createRaid() {
-    raidChannelCode = generateRaidCode();
-    raidHost = true;
-
-    const hostWizards = Array.from({length:6},(_,i)=>({ name:`Wizard-${i+1}`, damagePerSec:5 }));
-    raidActive = {
-        code: raidChannelCode,
-        boss: createRaidBoss(),
-        players: [{name:"Host", wizards:hostWizards}],
-        timer: RAID_TIME,
-        intervalId: null
-    };
-
-    localStorage.setItem("raid_" + raidChannelCode, JSON.stringify(raidActive));
-    alert("Raid Created!\nRaid Code: " + raidChannelCode + "\nBoss: " + raidActive.boss.name);
-    startHostRaidLoop();
-}
-
-// Join Raid (other player)
-function joinRaid() {
-    const code = prompt("Enter raid code:");
-    if(!code) return;
-
-    raidChannelCode = code.toUpperCase();
-    raidHost = false;
-
-    const saved = localStorage.getItem("raid_" + raidChannelCode);
-    if(!saved){ alert("Raid not found."); return; }
-
-    raidActive = JSON.parse(saved);
-    if(raidActive.players.length >= MAX_PLAYERS){ alert("Raid full!"); return; }
-
-    const playerName = prompt("Your trainer name?");
-    if(!playerName) return;
-
-    const battleWizards = Array.from({length:6},(_,i)=>({name:`Wizard-${i+1}`, damagePerSec:5}));
-    raidActive.players.push({name:playerName, wizards:battleWizards});
-
-    localStorage.setItem("raid_" + raidChannelCode, JSON.stringify(raidActive));
-
-    alert(playerName + " joined raid!\nPlayers: " + raidActive.players.map(p=>p.name).join(", "));
-    showRaidBattleScreen(raidActive.boss);
-}
-</script>
-	<script>
-// --- Make the player's wizard bounce while attacking ---
-const raidPlayerWizard = document.getElementById("raidPlayerWizard");
-
-let bounceDirection = 1;
-setInterval(() => {
-    if (!raidActive) return; // only bounce if a raid is active
-    const currentTop = parseFloat(raidPlayerWizard.style.top || "0");
-    // Move up and down by 5px
-    raidPlayerWizard.style.top = (currentTop + 1 * bounceDirection) + "px";
-    // Reverse direction if moved too far
-    if (currentTop >= 10) bounceDirection = -1;
-    else if (currentTop <= 0) bounceDirection = 1;
-}, 50);
-</script>
-	<script>
-// octagon polygon shapes
-		// --- POLYGON WIZARD VISUALS ---
-// Modify the inventory display to handle octagon polygons
-const originalCreateWizardCard = createWizardCard;
-createWizardCard = function(wizardData) {
-    const card = originalCreateWizardCard(wizardData);
-
-    const colorDiv = card.querySelector(".wizard-color");
-    if (wizardData.shape === "octagon") {
-        // Clip circle into 8-sided polygon
-        colorDiv.style.clipPath = "polygon(30% 0%, 70% 0%, 100% 30%, 100% 70%, 70% 100%, 30% 100%, 0% 70%, 0% 30%)";
-        colorDiv.style.borderRadius = "0"; // remove circle rounding
-    } else {
-        colorDiv.style.borderRadius = "50%";
-        colorDiv.style.clipPath = "none";
-    }
-
-    return card;
-};
-
-// --- POLYGON WIZARD OCTAGON VISUALS (Safe Paste Version) ---
-
-
-// --- POLYGON WIZARD OCTAGON VISUALS (Safe for multiple pastes) ---
-
-// Override collectPolygonFromRaid safely
-if (!window.originalCollectPolygonFromRaid) {
-    window.originalCollectPolygonFromRaid = collectPolygonFromRaid;
-}
-collectPolygonFromRaid = function(boss) {
-    const polygon = {
-        id: "polygon-" + Date.now(),
-        name: boss.name,
-        color: boss.shiny ? "gold" : boss.color,
-        iv: [
-            Math.floor(Math.random() * 6) + 6,
-            Math.floor(Math.random() * 6) + 6,
-            Math.floor(Math.random() * 6) + 6
-        ].join("/"),
-        shiny: boss.shiny,
-        shape: "octagon" // assign octagon shape
-    };
-
-    inventory.push(polygon);
-
-    alert(
-        `You collected ${polygon.name}!\n` +
-        `Shape: ${polygon.shape}\n` +
-        `Color: ${polygon.color}\n` +
-        `IV: ${polygon.iv}`
-    );
-
-    if (inventoryPanel.style.display !== "none") openInventory();
-
-    // Update catch screen wizard to octagon
-    if (currentCatchWizard === polygon) {
-        catchWizardElem.style.clipPath = "polygon(30% 0%, 70% 0%, 100% 30%, 100% 70%, 70% 100%, 30% 100%, 0% 70%, 0% 30%)";
-        catchWizardElem.style.borderRadius = "0";
-        catchWizardElem.style.background = polygon.color;
-    }
-};
-
-// Override createWizardCard safely
-if (!window.originalCreateWizardCard) {
-    window.originalCreateWizardCard = createWizardCard;
-}
-createWizardCard = function(wizardData) {
-    const card = window.originalCreateWizardCard(wizardData);
-
-    const colorDiv = card.querySelector(".wizard-color");
-    if (wizardData.shape === "octagon") {
-        colorDiv.style.clipPath = "polygon(30% 0%, 70% 0%, 100% 30%, 100% 70%, 70% 100%, 30% 100%, 0% 70%, 0% 30%)";
-        colorDiv.style.borderRadius = "0";
-    } else {
-        colorDiv.style.clipPath = "none";
-        colorDiv.style.borderRadius = "50%";
-    }
-
-    return card;
-};
-
-// Override showRaidBattleScreen safely
-if (!window.originalShowRaidBattleScreen) {
-    window.originalShowRaidBattleScreen = showRaidBattleScreen;
-}
-showRaidBattleScreen = function(boss) {
-    window.originalShowRaidBattleScreen(boss);
-
-    const bossCircle = document.getElementById("raidBossCircle");
-    if (boss.shape === "octagon") {
-        bossCircle.style.clipPath = "polygon(30% 0%, 70% 0%, 100% 30%, 100% 70%, 70% 100%, 30% 100%, 0% 70%, 0% 30%)";
-        bossCircle.style.borderRadius = "0";
-    } else {
-        bossCircle.style.clipPath = "none";
-        bossCircle.style.borderRadius = "50%";
-    }
-};
-// sssssssssssssssssssssssssssssssssssss
-// the previous ai coded snippet didnt work so override in a different way
-// WARNING: VERY MESSY JAVASCRIPT
-
-// --- MAKE RAID BOSSES OCTAGON ---
-// When a boss is created, ensure it has a shape property
-const originalCreateRaidBoss = createRaidBoss;
-createRaidBoss = function(hp = 2000) {
-    const boss = originalCreateRaidBoss(hp);
-    boss.shape = "octagon"; // <-- assign octagon shape
-    return boss;
-};
-
-// Override showRaidBattleScreen to display octagon
-const originalShowRaidBattleScreen = showRaidBattleScreen;
-showRaidBattleScreen = function(boss) {
-    originalShowRaidBattleScreen(boss);
-
-    const bossCircle = document.getElementById("raidBossCircle");
-    if (boss.shape === "octagon") {
-        bossCircle.style.clipPath = "polygon(30% 0%, 70% 0%, 100% 30%, 100% 70%, 70% 100%, 30% 100%, 0% 70%, 0% 30%)";
-        bossCircle.style.borderRadius = "0";
-    } else {
-        bossCircle.style.clipPath = "none";
-        bossCircle.style.borderRadius = "50%";
-    }
-};
-
-// Ensure any Polygon wizards collected are also octagon
-const originalCollectPolygonFromRaid = collectPolygonFromRaid;
-collectPolygonFromRaid = function(boss) {
-    const polygon = {
-        id: "polygon-" + Date.now(),
-        name: boss.name,
-        color: boss.shiny ? "gold" : boss.color,
-        iv: [
-            Math.floor(Math.random() * 6) + 4,
-            Math.floor(Math.random() * 6) + 4,
-            Math.floor(Math.random() * 6) + 4
-        ].join("/"),
-        shiny: boss.shiny,
-        shape: "octagon" // <-- mark as octagon
-    };
-
-    inventory.push(polygon);
-
-    // Open catch screen first
-    openCatchScreen(polygon);
-
-    // Apply octagon shape to catch screen wizard
-    catchWizardElem.style.clipPath = "polygon(30% 0%, 70% 0%, 100% 30%, 100% 70%, 70% 100%, 30% 100%, 0% 70%, 0% 30%)";
-    catchWizardElem.style.borderRadius = "0";
-    catchWizardElem.style.background = polygon.color;
-
-    if (inventoryPanel.style.display !== "none") openInventory();
-};
-
-	</script>
-    
-    
-    
-<script>
-// SNIPPET FOR RAIDS
-
-
-</script>
-<script>
-// ======================================
-// CLEAN WORLD RAID SYSTEM + CATCH REWARD
-// ======================================
-
-let raidSocket = null;
-
-let playerName = "";
-
-
-
-// ----------------------------
-// Helpers
-// ----------------------------
-function generateRaidCode() {
-    return Math.random().toString(36).substring(2,8).toUpperCase();
-}
-
-function randomLetter() {
-    return "ABCDEFGHIJKLMNOPQRSTUVWXYZ"[Math.floor(Math.random()*26)];
-}
-
-function randomRaidColor() {
-    return ["red","blue","green","purple","orange","pink","cyan"][Math.floor(Math.random()*7)];
-}
-
-function createRaidBoss(hp=2000) {
-    const shiny = Math.random() < 0.1;
-
-    return {
-        name: "Polygon-" + randomLetter(),
-        color: shiny ? "gold" : randomRaidColor(),
-        shiny,
-        hp,
-        maxHp: hp,
-        shape: "octagon"
-    };
-}
-
-// ----------------------------
-// Socket Connection
-// ----------------------------
-function connectRaidSocket(code) {
-
-    raidSocket = new WebSocket(
-        "wss://free.blr2.piesocket.com/v3/1?api_key=&notify_self=1"
-    );
-
-    raidSocket.onopen = () => {
-        console.log("Raid socket connected");
-    };
-
-    raidSocket.onmessage = (event) => {
-
-        let msg;
-
-        try {
-            msg = JSON.parse(event.data);
-        } catch {
-            return;
-        }
-
-        if (msg.room !== code) return;
-
-        // Host receives join request
-        if (msg.type === "joinRaid" && raidActive) {
-
-            raidActive.players.push({
-                name: msg.player,
-                wizards: Array.from({length:6},(_,i)=>({
-                    name:`Wizard-${i+1}`,
-                    damagePerSec:5
-                }))
-            });
-
-            alert(msg.player + " joined your raid!");
-        }
-
-        // Everyone receives raid state
-        if (msg.type === "raidState") {
-
-            raidActive = msg.raid;
-
-            showRaidBattleScreen(raidActive.boss);
-
-            raidTimerElem.textContent = raidActive.timer;
-
-            updateRaidHP(
-                raidActive.boss.hp,
-                raidActive.boss.maxHp
-            );
-        }
-
-        // Raid end
-        if (msg.type === "raidEnded") {
-
-            raidScreen.style.display = "none";
-
-            if (msg.boss) {
-                collectPolygonFromRaid(msg.boss);
-            }
-
-            raidActive = null;
-        }
-    };
-}
-
-// ----------------------------
-// Create Raid
-// ----------------------------
-function createRaid() {
-
-    playerName = prompt("Enter your trainer name") || "Wizard";
-
-    const code = generateRaidCode();
-
-    raidActive = {
-        code,
-        boss: createRaidBoss(),
-        players: [{
-            name: playerName,
-            wizards: Array.from({length:6},(_,i)=>({
-                name:`Wizard-${i+1}`,
-                damagePerSec:5
-            }))
-        }],
-        timer: RAID_TIME
-    };
-
-    connectRaidSocket(code);
-
-    alert(
-        "Worldwide Raid Created!\n" +
-        "Code: " + code + "\n" +
-        "Boss: " + raidActive.boss.name
-    );
-
-    showRaidBattleScreen(raidActive.boss);
-
-    startRaidLoop();
-}
-
-// ----------------------------
-// Join Raid
-// ----------------------------
-function joinRaid() {
-
-    playerName = prompt("Enter your trainer name") || "Wizard";
-
-    const code = prompt("Enter raid code");
-    if (!code) return;
-
-    connectRaidSocket(code.toUpperCase());
-
-    raidSocket.onopen = () => {
-
-        raidSocket.send(JSON.stringify({
-            room: code.toUpperCase(),
-            type: "joinRaid",
-            player: playerName
-        }));
-    };
-}
-
-// ----------------------------
-// Raid Battle Loop (Host only)
-// ----------------------------
-function startRaidLoop() {
-
-    const loop = setInterval(() => {
-
-        if (!raidActive) {
-            clearInterval(loop);
-            return;
-        }
-
-        let totalDPS = 0;
-
-        raidActive.players.forEach(player=>{
-            player.wizards.forEach(wizard=>{
-                totalDPS += wizard.damagePerSec;
-            });
-        });
-
-        raidActive.boss.hp -= totalDPS;
-        raidActive.timer--;
-
-        raidActive.boss.hp = Math.max(0, raidActive.boss.hp);
-
-        raidTimerElem.textContent = raidActive.timer;
-
-        updateRaidHP(
-            raidActive.boss.hp,
-            raidActive.boss.maxHp
-        );
-
-        raidSocket.send(JSON.stringify({
-            room: raidActive.code,
-            type: "raidState",
-            raid: raidActive
-        }));
-
-        // Victory
-        if (raidActive.boss.hp <= 0) {
-
-            clearInterval(loop);
-
-            raidScreen.style.display = "none";
-
-            collectPolygonFromRaid(raidActive.boss);
-
-            raidSocket.send(JSON.stringify({
-                room: raidActive.code,
-                type: "raidEnded",
-                boss: raidActive.boss
-            }));
-
-            raidActive = null;
-        }
-
-        // Failure
-        if (raidActive.timer <= 0) {
-
-            clearInterval(loop);
-
-            alert("Raid failed!");
-
-            raidSocket.send(JSON.stringify({
-                room: raidActive.code,
-                type: "raidEnded"
-            }));
-
-            raidActive = null;
-        }
-
-    },1000);
-}
-
-// ----------------------------
-// Raid UI
-// ----------------------------
-function showRaidBattleScreen(boss) {
-
+function showRaidBattleScreen(boss){
     raidScreen.style.display = "flex";
-
-    raidBossNameElem.textContent = boss.name;
-
-    raidBossCircleElem.style.background = boss.color;
-
-    raidBossHPElem.style.width =
-        (boss.hp / boss.maxHp * 100) + "%";
-
-    if (boss.shape === "octagon") {
-        raidBossCircleElem.style.clipPath =
-            "polygon(30% 0%,70% 0%,100% 30%,100% 70%,70% 100%,30% 100%,0% 70%,0% 30%)";
+    raidBossNameElem.textContent = boss.name || "Raid Boss";
+    raidBossCircleElem.style.background = boss.color || "red";
+    if(boss.shape === "octagon"){
+        raidBossCircleElem.style.clipPath = "polygon(30% 0%,70% 0%,100% 30%,100% 70%,70% 100%,30% 100%,0% 70%,0% 30%)";
         raidBossCircleElem.style.borderRadius = "0";
     } else {
         raidBossCircleElem.style.clipPath = "none";
         raidBossCircleElem.style.borderRadius = "50%";
     }
+    updateRaidHP(boss.hp || 2000, boss.maxHp || 2000);
+}
+function updateRaidHP(current, max){
+    raidBossHPElem.style.width = (current / max * 100) + "%";
 }
 
-function updateRaidHP(currentHP,maxHP) {
-    raidBossHPElem.style.width =
-        (currentHP/maxHP*100)+"%";
-}
-
-// ----------------------------
-// Reward Catch
-// ----------------------------
-function collectPolygonFromRaid(boss) {
-
+// ====================== COLLECT POLYGON (OCTAGON REWARD) ======================
+function collectPolygonFromRaid(boss){
     const polygon = {
         id: "polygon-" + Date.now(),
         name: boss.name,
         color: boss.color,
-        iv: [
-            Math.floor(Math.random()*6)+4,
-            Math.floor(Math.random()*6)+4,
-            Math.floor(Math.random()*6)+4
-        ].join("/"),
+        iv: [6+Math.floor(Math.random()*5),6+Math.floor(Math.random()*5),6+Math.floor(Math.random()*5)].join("/"),
         shiny: boss.shiny,
         shape: "octagon"
     };
-
     openCatchScreen(polygon);
-
-    catchWizardElem.style.background = polygon.color;
-
-    catchWizardElem.style.clipPath =
-        "polygon(30% 0%,70% 0%,100% 30%,100% 70%,70% 100%,30% 100%,0% 70%,0% 30%)";
-
-    catchWizardElem.style.borderRadius = "0";
+    if(inventoryPanel.style.display !== "none") openInventory();
 }
 
-</script>
-<!-- Inventory Panel -->
-<div id="inventoryContainer" style="position:fixed; bottom:0; left:0; width:100%; max-height:50%; background:rgba(240,240,240,0.95); z-index:1000; padding:10px; display:none; flex-direction:column; box-shadow:0 -5px 15px rgba(0,0,0,0.5);">
-    <!-- Search Bar -->
-    <input id="inventorySearch" type="text" placeholder="Search wizards..." style="margin-bottom:10px; padding:5px; font-size:16px; border-radius:5px; border:1px solid #aaa;">
-    <!-- Card Scroll Area -->
-    <div id="inventoryScroll" style="display:flex; gap:10px; overflow-x:auto; padding-bottom:10px;"></div>
-</div>
+// ====================== START GAME ======================
+spawnWizardBall(200,200); spawnWizardBall(400,100); spawnWizardBall(600,300);
 
-<button id="inventoryToggle" style="position:fixed; bottom:10px; right:10px; z-index:1100; width:50px; height:50px; border:none; background:#ff8800; color:white; font-weight:bold; border-radius:50%; cursor:pointer; font-size:20px;">O</button>
 
-<script>
-const inventoryContainer = document.getElementById('inventoryContainer');
-const inventoryScroll = document.getElementById('inventoryScroll');
-const inventoryToggle = document.getElementById('inventoryToggle');
-const inventorySearch = document.getElementById('inventorySearch');
 
-// Toggle inventory display
-inventoryToggle.addEventListener('click', () => {
-    inventoryContainer.style.display = inventoryContainer.style.display === 'flex' ? 'none' : 'flex';
-    if(inventoryContainer.style.display==='flex') renderInventory();
-});
 
-// Render inventory
-function renderInventory(filter="") {
-    inventoryScroll.innerHTML = "";
-    inventory.filter(w=>w.name.toLowerCase().includes(filter.toLowerCase()))
-        .forEach(w=>inventoryScroll.appendChild(createInventoryCard(w)));
+// =============================================================================
+// FIX: Add eyes + hat to catch screen wizard + reliable backgrounds
+// Paste this at the END of your <script> block
+// =============================================================================
+
+// 1. Override openCatchScreen to include eyes & hat
+const originalOpenCatchScreen = openCatchScreen || function(){};
+openCatchScreen = function(wizardData) {
+    originalOpenCatchScreen(wizardData);
+
+    // Make sure wizard has face features (eyes + hat)
+    catchWizardElem.innerHTML = `
+        <div class="eye" style="position:absolute; width:12px; height:12px; background:white; border-radius:50%; top:28px; left:22px; box-shadow:0 0 4px rgba(0,0,0,0.4);"></div>
+        <div class="eye" style="position:absolute; width:12px; height:12px; background:white; border-radius:50%; top:28px; right:22px; box-shadow:0 0 4px rgba(0,0,0,0.4);"></div>
+        <div class="hat" style="position:absolute; width:36px; height:36px; background:#fff; border-radius:50% 50%; top:-18px; left:50%; transform:translateX(-50%); border:3px solid #000; border-bottom:none; box-shadow:0 4px 8px rgba(0,0,0,0.3);"></div>
+`;
+
+    // Make sure shape (circle/octagon) is applied correctly
+    catchWizardElem.style.clipPath = wizardData.shape === "octagon" 
+        ? "polygon(30% 0%, 70% 0%, 100% 30%, 100% 70%, 70% 100%, 30% 100%, 0% 70%, 0% 30%)"
+        : "none";
+    catchWizardElem.style.borderRadius = wizardData.shape === "octagon" ? "0" : "50%";
+};
+
+// 2. Force-apply nice, reliable backgrounds (replace broken hotlinks)
+const raidScreen = document.getElementById('raidBattleScreen');
+const catchScreen = document.getElementById('catchScreen');
+
+if (raidScreen) {
+    raidScreen.style.backgroundImage = "url('https://wallup.net/wp-content/uploads/2016/05/02/274452-architecture-nature-trees-Sun-pillar-stone-Colosseum-Rome-Italy-capital-stairs-sunlight-path-field-grass-arena-arch-building-monuments.jpg')";
+    raidScreen.style.backgroundSize = "cover";
+    raidScreen.style.backgroundPosition = "center";
+    raidScreen.style.backgroundRepeat = "no-repeat";
 }
 
-// Inventory card design
-function createInventoryCard(wizardData) {
-    const card = document.createElement('div');
-    card.style.minWidth = "120px";
-    card.style.background = "#fff";
-    card.style.borderRadius = "10px";
-    card.style.padding = "10px";
-    card.style.boxShadow = "0 3px 6px rgba(0,0,0,0.2)";
-    card.style.textAlign = "center";
-    card.style.flex = "0 0 auto";
+if (catchScreen) {
+    catchScreen.style.backgroundImage = "url('https://images2.alphacoders.com/117/11762.jpg')";
+    catchScreen.style.backgroundSize = "cover";
+    catchScreen.style.backgroundPosition = "center";
+    catchScreen.style.backgroundRepeat = "no-repeat";
+}
 
-    // Wizard shape
-    const colorDiv = document.createElement('div');
-    colorDiv.style.width = "60px";
-    colorDiv.style.height = "60px";
-    colorDiv.style.margin = "0 auto 5px";
-    colorDiv.style.background = wizardData.color || "gray";
-
-    if(wizardData.shape==="octagon"){
-        colorDiv.style.clipPath="polygon(30% 0%, 70% 0%, 100% 30%, 100% 70%, 70% 100%, 30% 100%, 0% 70%, 0% 30%)";
-        colorDiv.style.borderRadius="0";
-    } else {
-        colorDiv.style.borderRadius="50%";
-        colorDiv.style.clipPath="none";
+// Optional: Add a subtle overlay so text/buttons are more readable
+const style = document.createElement('style');
+style.textContent = `
+    #raidBattleScreen::before,
+    #catchScreen::before {
+        content: "";
+        position: absolute;
+        inset: 0;
+        background: rgba(0, 0, 0, 0.35);
+        z-index: 1;
+        pointer-events: none;
     }
-    card.appendChild(colorDiv);
+    #raidBattleScreen > *,
+    #catchScreen > * {
+        position: relative;
+        z-index: 2;
+    }
+`;
+document.head.appendChild(style);
 
-    // Name
-    const nameDiv = document.createElement('div');
-    nameDiv.textContent = wizardData.name;
-    nameDiv.style.fontWeight = "bold";
-    nameDiv.style.marginBottom = "5px";
-    card.appendChild(nameDiv);
-
-    // IV / CP badge
-    const cpDiv = document.createElement('div');
-    cpDiv.textContent = "IV: "+wizardData.iv;
-    cpDiv.style.background="#f4b400";
-    cpDiv.style.color="#fff";
-    cpDiv.style.borderRadius="5px";
-    cpDiv.style.padding="2px 5px";
-    cpDiv.style.fontSize="12px";
-    cpDiv.style.display="inline-block";
-    card.appendChild(cpDiv);
-
-    return card;
-}
-
-// Filter inventory by search
-inventorySearch.addEventListener('input', ()=>renderInventory(inventorySearch.value));
+// =============================================================================
+// End of fix snippet
+// =============================================================================
 </script>
 </body>
 </html>
