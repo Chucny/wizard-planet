@@ -442,7 +442,7 @@ function collectPolygonFromRaid(boss){
 }
 
 // ====================== START GAME ======================
-// i removed the 3 spawned wizards in the beginning
+spawnWizardBall(200,200); spawnWizardBall(400,100); spawnWizardBall(600,300);
 
 
 
@@ -513,5 +513,107 @@ document.head.appendChild(style);
 // End of fix snippet
 // =============================================================================
 </script>
-</body>
-</html>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-app.js";
+import {
+  getDatabase,
+  ref,
+  set,
+  get
+} from "https://www.gstatic.com/firebasejs/12.10.0/firebase-database.js";
+
+import {
+  getAuth,
+  createUserWithEmailAndPassword,
+  signInWithEmailAndPassword
+} from "https://www.gstatic.com/firebasejs/12.10.0/firebase-auth.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyBwc_UlDGweMWbG17rBeytQ1Y2JpYEgrdI",
+  authDomain: "wizard-planet0.firebaseapp.com",
+  databaseURL: "https://wizard-planet0-default-rtdb.europe-west1.firebasedatabase.app",
+  projectId: "wizard-planet0",
+  storageBucket: "wizard-planet0.firebasestorage.app",
+  messagingSenderId: "648724841842",
+  appId: "1:648724841842:web:3cbe09a1b9a1b3dc07c9eb"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getDatabase(app);
+const auth = getAuth(app);
+
+window.playerInventory = [];
+window.playerName = "";
+
+document.body.insertAdjacentHTML("beforeend", `
+<div id="loginScreen" style="
+position:fixed;
+inset:0;
+background:black;
+display:flex;
+flex-direction:column;
+justify-content:center;
+align-items:center;
+z-index:999999;
+color:white;
+gap:10px;
+">
+<input id="usernameInput" placeholder="Username">
+<input id="passwordInput" type="password" placeholder="Password">
+<button id="loginBtn">Login / Register</button>
+<div id="loginText"></div>
+</div>
+`);
+
+document.getElementById("loginBtn").onclick = async () => {
+
+    const username = document.getElementById("usernameInput").value.trim().toLowerCase();
+    const password = document.getElementById("passwordInput").value.trim();
+    const email = username + "@wizardplanet.com";
+
+    try {
+        await signInWithEmailAndPassword(auth,email,password);
+        afterLogin(username);
+
+    } catch {
+
+        try {
+            await createUserWithEmailAndPassword(auth,email,password);
+
+            await set(ref(db,"players/"+username),{
+                inventory:[]
+            });
+
+            afterLogin(username);
+
+        } catch(e) {
+            document.getElementById("loginText").textContent = "Wrong password or username exists";
+        }
+    }
+};
+
+async function afterLogin(username) {
+
+    window.playerName = username;
+
+    const playerRef = ref(db,"players/"+username);
+
+    const snap = await get(playerRef);
+
+    if(snap.exists()) {
+        window.playerInventory = snap.val().inventory || [];
+    }
+
+    setInterval(()=>{
+        set(playerRef,{
+            inventory:window.playerInventory
+        });
+    },10000);
+
+    document.getElementById("loginScreen").remove();
+
+    console.log("Logged in:",username);
+}
+</script>
+</body></html>
