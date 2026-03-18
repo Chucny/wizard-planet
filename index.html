@@ -556,12 +556,19 @@ setInterval(() => {
 }, 10000);
 
 // --- Load wizards ---
+// --- Load wizards into inventory ---
 async function loadWizards(username) {
   const snapshot = await get(ref(db, "players/" + username));
   const data = snapshot.val();
   if (data && data.wizards) {
-    Object.keys(window.wizards).forEach(k => delete window.wizards[k]);
-    Object.assign(window.wizards, data.wizards);
+    // Clear current inventory
+    inventory.length = 0;
+
+    // Convert saved wizards object into array and push to inventory
+    Object.values(data.wizards).forEach(w => inventory.push(w));
+
+    // Refresh inventory panel if it's open
+    if (inventoryPanel.style.display !== "none") openInventory();
   }
 }
 
