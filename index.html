@@ -1317,5 +1317,309 @@ collectPolygonFromRaid = function(boss) {
 };
 
 	</script>
+    
+    
+    
+<script>
+// SNIPPET FOR RAIDS
+
+
+</script>
+<script>
+// ======================================
+// CLEAN WORLD RAID SYSTEM + CATCH REWARD
+// ======================================
+
+let raidSocket = null;
+
+let playerName = "";
+
+
+
+// ----------------------------
+// Helpers
+// ----------------------------
+function generateRaidCode() {
+    return Math.random().toString(36).substring(2,8).toUpperCase();
+}
+
+function randomLetter() {
+    return "ABCDEFGHIJKLMNOPQRSTUVWXYZ"[Math.floor(Math.random()*26)];
+}
+
+function randomRaidColor() {
+    return ["red","blue","green","purple","orange","pink","cyan"][Math.floor(Math.random()*7)];
+}
+
+function createRaidBoss(hp=2000) {
+    const shiny = Math.random() < 0.1;
+
+    return {
+        name: "Polygon-" + randomLetter(),
+        color: shiny ? "gold" : randomRaidColor(),
+        shiny,
+        hp,
+        maxHp: hp,
+        shape: "octagon"
+    };
+}
+
+// ----------------------------
+// Socket Connection
+// ----------------------------
+function connectRaidSocket(code) {
+
+    raidSocket = new WebSocket(
+        "wss://free.blr2.piesocket.com/v3/1?api_key=&notify_self=1"
+    );
+
+    raidSocket.onopen = () => {
+        console.log("Raid socket connected");
+    };
+
+    raidSocket.onmessage = (event) => {
+
+        let msg;
+
+        try {
+            msg = JSON.parse(event.data);
+        } catch {
+            return;
+        }
+
+        if (msg.room !== code) return;
+
+        // Host receives join request
+        if (msg.type === "joinRaid" && raidActive) {
+
+            raidActive.players.push({
+                name: msg.player,
+                wizards: Array.from({length:6},(_,i)=>({
+                    name:`Wizard-${i+1}`,
+                    damagePerSec:5
+                }))
+            });
+
+            alert(msg.player + " joined your raid!");
+        }
+
+        // Everyone receives raid state
+        if (msg.type === "raidState") {
+
+            raidActive = msg.raid;
+
+            showRaidBattleScreen(raidActive.boss);
+
+            raidTimerElem.textContent = raidActive.timer;
+
+            updateRaidHP(
+                raidActive.boss.hp,
+                raidActive.boss.maxHp
+            );
+        }
+
+        // Raid end
+        if (msg.type === "raidEnded") {
+
+            raidScreen.style.display = "none";
+
+            if (msg.boss) {
+                collectPolygonFromRaid(msg.boss);
+            }
+
+            raidActive = null;
+        }
+    };
+}
+
+// ----------------------------
+// Create Raid
+// ----------------------------
+function createRaid() {
+
+    playerName = prompt("Enter your trainer name") || "Wizard";
+
+    const code = generateRaidCode();
+
+    raidActive = {
+        code,
+        boss: createRaidBoss(),
+        players: [{
+            name: playerName,
+            wizards: Array.from({length:6},(_,i)=>({
+                name:`Wizard-${i+1}`,
+                damagePerSec:5
+            }))
+        }],
+        timer: RAID_TIME
+    };
+
+    connectRaidSocket(code);
+
+    alert(
+        "Worldwide Raid Created!\n" +
+        "Code: " + code + "\n" +
+        "Boss: " + raidActive.boss.name
+    );
+
+    showRaidBattleScreen(raidActive.boss);
+
+    startRaidLoop();
+}
+
+// ----------------------------
+// Join Raid
+// ----------------------------
+function joinRaid() {
+
+    playerName = prompt("Enter your trainer name") || "Wizard";
+
+    const code = prompt("Enter raid code");
+    if (!code) return;
+
+    connectRaidSocket(code.toUpperCase());
+
+    raidSocket.onopen = () => {
+
+        raidSocket.send(JSON.stringify({
+            room: code.toUpperCase(),
+            type: "joinRaid",
+            player: playerName
+        }));
+    };
+}
+
+// ----------------------------
+// Raid Battle Loop (Host only)
+// ----------------------------
+function startRaidLoop() {
+
+    const loop = setInterval(() => {
+
+        if (!raidActive) {
+            clearInterval(loop);
+            return;
+        }
+
+        let totalDPS = 0;
+
+        raidActive.players.forEach(player=>{
+            player.wizards.forEach(wizard=>{
+                totalDPS += wizard.damagePerSec;
+            });
+        });
+
+        raidActive.boss.hp -= totalDPS;
+        raidActive.timer--;
+
+        raidActive.boss.hp = Math.max(0, raidActive.boss.hp);
+
+        raidTimerElem.textContent = raidActive.timer;
+
+        updateRaidHP(
+            raidActive.boss.hp,
+            raidActive.boss.maxHp
+        );
+
+        raidSocket.send(JSON.stringify({
+            room: raidActive.code,
+            type: "raidState",
+            raid: raidActive
+        }));
+
+        // Victory
+        if (raidActive.boss.hp <= 0) {
+
+            clearInterval(loop);
+
+            raidScreen.style.display = "none";
+
+            collectPolygonFromRaid(raidActive.boss);
+
+            raidSocket.send(JSON.stringify({
+                room: raidActive.code,
+                type: "raidEnded",
+                boss: raidActive.boss
+            }));
+
+            raidActive = null;
+        }
+
+        // Failure
+        if (raidActive.timer <= 0) {
+
+            clearInterval(loop);
+
+            alert("Raid failed!");
+
+            raidSocket.send(JSON.stringify({
+                room: raidActive.code,
+                type: "raidEnded"
+            }));
+
+            raidActive = null;
+        }
+
+    },1000);
+}
+
+// ----------------------------
+// Raid UI
+// ----------------------------
+function showRaidBattleScreen(boss) {
+
+    raidScreen.style.display = "flex";
+
+    raidBossNameElem.textContent = boss.name;
+
+    raidBossCircleElem.style.background = boss.color;
+
+    raidBossHPElem.style.width =
+        (boss.hp / boss.maxHp * 100) + "%";
+
+    if (boss.shape === "octagon") {
+        raidBossCircleElem.style.clipPath =
+            "polygon(30% 0%,70% 0%,100% 30%,100% 70%,70% 100%,30% 100%,0% 70%,0% 30%)";
+        raidBossCircleElem.style.borderRadius = "0";
+    } else {
+        raidBossCircleElem.style.clipPath = "none";
+        raidBossCircleElem.style.borderRadius = "50%";
+    }
+}
+
+function updateRaidHP(currentHP,maxHP) {
+    raidBossHPElem.style.width =
+        (currentHP/maxHP*100)+"%";
+}
+
+// ----------------------------
+// Reward Catch
+// ----------------------------
+function collectPolygonFromRaid(boss) {
+
+    const polygon = {
+        id: "polygon-" + Date.now(),
+        name: boss.name,
+        color: boss.color,
+        iv: [
+            Math.floor(Math.random()*6)+4,
+            Math.floor(Math.random()*6)+4,
+            Math.floor(Math.random()*6)+4
+        ].join("/"),
+        shiny: boss.shiny,
+        shape: "octagon"
+    };
+
+    openCatchScreen(polygon);
+
+    catchWizardElem.style.background = polygon.color;
+
+    catchWizardElem.style.clipPath =
+        "polygon(30% 0%,70% 0%,100% 30%,100% 70%,70% 100%,30% 100%,0% 70%,0% 30%)";
+
+    catchWizardElem.style.borderRadius = "0";
+}
+
+</script>
 </body>
 </html>
