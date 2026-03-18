@@ -1621,5 +1621,85 @@ function collectPolygonFromRaid(boss) {
 }
 
 </script>
+<!-- Inventory Panel -->
+<div id="inventoryContainer" style="position:fixed; bottom:0; left:0; width:100%; max-height:50%; background:rgba(240,240,240,0.95); z-index:1000; padding:10px; display:none; flex-direction:column; box-shadow:0 -5px 15px rgba(0,0,0,0.5);">
+    <!-- Search Bar -->
+    <input id="inventorySearch" type="text" placeholder="Search wizards..." style="margin-bottom:10px; padding:5px; font-size:16px; border-radius:5px; border:1px solid #aaa;">
+    <!-- Card Scroll Area -->
+    <div id="inventoryScroll" style="display:flex; gap:10px; overflow-x:auto; padding-bottom:10px;"></div>
+</div>
+
+<button id="inventoryToggle" style="position:fixed; bottom:10px; right:10px; z-index:1100; width:50px; height:50px; border:none; background:#ff8800; color:white; font-weight:bold; border-radius:50%; cursor:pointer; font-size:20px;">O</button>
+
+<script>
+const inventoryContainer = document.getElementById('inventoryContainer');
+const inventoryScroll = document.getElementById('inventoryScroll');
+const inventoryToggle = document.getElementById('inventoryToggle');
+const inventorySearch = document.getElementById('inventorySearch');
+
+// Toggle inventory display
+inventoryToggle.addEventListener('click', () => {
+    inventoryContainer.style.display = inventoryContainer.style.display === 'flex' ? 'none' : 'flex';
+    if(inventoryContainer.style.display==='flex') renderInventory();
+});
+
+// Render inventory
+function renderInventory(filter="") {
+    inventoryScroll.innerHTML = "";
+    inventory.filter(w=>w.name.toLowerCase().includes(filter.toLowerCase()))
+        .forEach(w=>inventoryScroll.appendChild(createInventoryCard(w)));
+}
+
+// Inventory card design
+function createInventoryCard(wizardData) {
+    const card = document.createElement('div');
+    card.style.minWidth = "120px";
+    card.style.background = "#fff";
+    card.style.borderRadius = "10px";
+    card.style.padding = "10px";
+    card.style.boxShadow = "0 3px 6px rgba(0,0,0,0.2)";
+    card.style.textAlign = "center";
+    card.style.flex = "0 0 auto";
+
+    // Wizard shape
+    const colorDiv = document.createElement('div');
+    colorDiv.style.width = "60px";
+    colorDiv.style.height = "60px";
+    colorDiv.style.margin = "0 auto 5px";
+    colorDiv.style.background = wizardData.color || "gray";
+
+    if(wizardData.shape==="octagon"){
+        colorDiv.style.clipPath="polygon(30% 0%, 70% 0%, 100% 30%, 100% 70%, 70% 100%, 30% 100%, 0% 70%, 0% 30%)";
+        colorDiv.style.borderRadius="0";
+    } else {
+        colorDiv.style.borderRadius="50%";
+        colorDiv.style.clipPath="none";
+    }
+    card.appendChild(colorDiv);
+
+    // Name
+    const nameDiv = document.createElement('div');
+    nameDiv.textContent = wizardData.name;
+    nameDiv.style.fontWeight = "bold";
+    nameDiv.style.marginBottom = "5px";
+    card.appendChild(nameDiv);
+
+    // IV / CP badge
+    const cpDiv = document.createElement('div');
+    cpDiv.textContent = "IV: "+wizardData.iv;
+    cpDiv.style.background="#f4b400";
+    cpDiv.style.color="#fff";
+    cpDiv.style.borderRadius="5px";
+    cpDiv.style.padding="2px 5px";
+    cpDiv.style.fontSize="12px";
+    cpDiv.style.display="inline-block";
+    card.appendChild(cpDiv);
+
+    return card;
+}
+
+// Filter inventory by search
+inventorySearch.addEventListener('input', ()=>renderInventory(inventorySearch.value));
+</script>
 </body>
 </html>
