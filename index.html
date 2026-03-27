@@ -56,15 +56,8 @@ html, body { margin:0; padding:0; width:100%; height:100%; overflow:hidden; font
 <!-- Inventory panel -->
 <div id="inventoryPanel"></div>
 <button id="inventoryButton">O</button>
-<div id="savebutton">
-    <button onclick="downloadInventory()" style="color:white;background-color:lightblue;">Save</button>
-</div>
-<input type="file" id="loadFileInput" style="display:none;" accept=".wizard">
 
-<!-- Import Inventory -->
-<div style="position:fixed; bottom:80px; right:10px; z-index:200;">
-    <button onclick="loadInventoryFromFile()" style="color:white;background-color:lightblue;">Import</button>
-</div>
+
 
 <!-- Raid UI -->
 <div id="raidUI">
@@ -526,6 +519,8 @@ document.head.appendChild(style);
   </div>
 </div>
 
+
+<!-- Replace your old Firebase script with this one -->
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-app.js";
 import { getDatabase, ref, set, get } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-database.js";
@@ -543,78 +538,97 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
 
-window.wizards = {}; // make sure this exists
-
-// --- Save wizards every 10 seconds ---
-setInterval(() => {
-  if (window.playerName && window.playerPassword) {
-    set(ref(db, "players/" + window.playerName), { 
-      password: window.playerPassword, 
-      wizards: window.wizards 
-    }).catch(err => console.error("Save error:", err));
-  }
-}, 10000);
-
-// --- Load wizards ---
-// --- Load wizards into inventory ---
-async function loadWizards(username) {
-  const snapshot = await get(ref(db, "players/" + username));
-  const data = snapshot.val();
-  if (data && data.wizards) {
-    // Clear current inventory
-    inventory.length = 0;
-
-    // Convert saved wizards object into array and push to inventory
-    Object.values(data.wizards).forEach(w => inventory.push(w));
-
-    // Refresh inventory panel if it's open
-    if (inventoryPanel.style.display !== "none") openInventory();
+// ====================== SAVE / LOAD ======================
+async function saveToFirebase() {
+  if (!window.playerName || !window.playerPassword) return;
+  
+  try {
+    await set(ref(db, "players/" + window.playerName), {
+      password: window.playerPassword,
+      inventory: inventory || []   // ← THIS WAS THE FIX
+    });
+    console.log("%c✅ Saved " + (inventory?.length || 0) + " wizards to Firebase", "color:lime;font-weight:bold");
+  } catch (err) {
+    console.error("Save error:", err);
   }
 }
 
-// --- Login ---
+// Auto-save every 8 seconds (you can change)
+setInterval(saveToFirebase, 8000);
+
+// Load wizards on login
+async function loadWizards(username) {
+  try {
+    const snapshot = await get(ref(db, "players/" + username));
+    const data = snapshot.val();
+    
+    if (data && Array.isArray(data.inventory)) {
+      inventory.length = 0;                    // clear current
+      data.inventory.forEach(w => inventory.push(w));
+      
+      console.log("%c✅ Loaded " + inventory.length + " wizards from Firebase", "color:lime");
+      if (inventoryPanel.style.display !== "none") openInventory();
+    }
+  } catch (err) {
+    console.error("Load error:", err);
+  }
+}
+
+// ====================== LOGIN / REGISTER ======================
 document.getElementById("loginBtn").onclick = async () => {
   const username = document.getElementById("loginUsername").value.trim();
   const password = document.getElementById("loginPassword").value.trim();
   const msg = document.getElementById("loginMsg");
-
+  
   if (!username || !password) return msg.textContent = "Enter username and password";
-
+  
   const snapshot = await get(ref(db, "players/" + username));
   const data = snapshot.val();
-
+  
   if (!data) return msg.textContent = "User does not exist";
   if (data.password !== password) return msg.textContent = "Wrong password";
-
+  
   window.playerName = username;
   window.playerPassword = password;
-
+  
   await loadWizards(username);
-
   document.getElementById("loginScreen").style.display = "none";
   msg.textContent = "";
-  console.log("Login successful:", username);
+  console.log("✅ Login successful:", username);
 };
 
-// --- Register ---
 document.getElementById("registerBtn").onclick = async () => {
   const username = document.getElementById("loginUsername").value.trim();
   const password = document.getElementById("loginPassword").value.trim();
   const msg = document.getElementById("loginMsg");
-
+  
   if (!username || !password) return msg.textContent = "Enter username and password";
-
+  
   const snapshot = await get(ref(db, "players/" + username));
   if (snapshot.exists()) return msg.textContent = "Username already exists";
-
+  
   window.playerName = username;
   window.playerPassword = password;
-  window.wizards = {}; // start fresh
-
-  await set(ref(db, "players/" + username), { password, wizards });
-
-  msg.style.color = "green";
-  msg.textContent = "Account created! You can now log in.";
+  
+  // Create fresh account with empty inventory
+  await set(ref(db, "players/" + username), { 
+    password, 
+    inventory: [] 
+  });
+  
+  msg.style.color = "lime";
+  msg.textContent = "Account created! Logging you in...";
+  
+  // Auto-login after register
+  await loadWizards(username);
+  document.getElementById("loginScreen").style.display = "none";
 };
-</script>
-</body></html>
+
+// Optional: Immediate save when you catch a wizard
+const originalCatchWizard = catchWizard;
+catchWizard = function(ball, wizardData) {
+  originalCatchWizard(ball, wizardData);
+  // Force save right after catching
+  setTimeout(saveToFirebase, 500);
+};
+</script></body></html>
