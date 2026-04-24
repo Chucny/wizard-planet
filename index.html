@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -633,3 +634,117 @@ catchWizard = function(ball, wizardData) {
   setTimeout(saveToFirebase, 500);
 };
 </script></body></html>
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-app.js";
+import { getDatabase, ref, set, get, remove } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-database.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyBwc_UlDGweMWbG17rBeytQ1Y2JpYEgrdI",
+  authDomain: "wizard-planet0.firebaseapp.com",
+  projectId: "wizard-planet0",
+  storageBucket: "wizard-planet0.firebasestorage.app",
+  messagingSenderId: "648724841842",
+  appId: "1:648724841842:web:3cbe09a1b9a1b3dc07c9eb",
+  databaseURL: "https://wizard-planet0-default-rtdb.europe-west1.firebasedatabase.app/"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getDatabase(app);
+
+// Sync game inventory to window so this module can see it
+window.inventory = inventory;
+
+// ====================== CORE FUNCTIONS ======================
+
+async function saveToFirebase() {
+  if (!window.playerName || !window.playerPassword) return;
+  try {
+    // We use window.inventory to get the latest caught wizards
+    await set(ref(db, "players/" + window.playerName), {
+      password: window.playerPassword,
+      inventory: window.inventory || []
+    });
+    console.log("✅ Progress Saved");
+  } catch (err) {
+    console.error("Save error:", err);
+  }
+}
+
+async function loadWizards(username) {
+  try {
+    const snapshot = await get(ref(db, "players/" + username));
+    const data = snapshot.val();
+    if (data && Array.isArray(data.inventory)) {
+      // Clear current game inventory and fill with DB data
+      inventory.length = 0;
+      data.inventory.forEach(w => inventory.push(w));
+      window.inventory = inventory; 
+      if (inventoryPanel.style.display !== "none") openInventory();
+    }
+  } catch (err) {
+    console.error("Load error:", err);
+  }
+}
+
+// ====================== UI & EVENT LISTENERS ======================
+
+// Login Logic
+document.getElementById("loginBtn").onclick = async () => {
+  const username = document.getElementById("loginUsername").value.trim();
+  const password = document.getElementById("loginPassword").value.trim();
+  const msg = document.getElementById("loginMsg");
+  
+  if (!username || !password) return msg.textContent = "Missing info";
+  
+  const snapshot = await get(ref(db, "players/" + username));
+  const data = snapshot.val();
+  
+  if (!data) return msg.textContent = "User not found";
+  if (data.password !== password) return msg.textContent = "Wrong password";
+  
+  window.playerName = username;
+  window.playerPassword = password;
+  
+  await loadWizards(username);
+  document.getElementById("loginScreen").style.display = "none";
+};
+
+// Register Logic
+document.getElementById("registerBtn").onclick = async () => {
+  const username = document.getElementById("loginUsername").value.trim();
+  const password = document.getElementById("loginPassword").value.trim();
+  const msg = document.getElementById("loginMsg");
+  
+  const snapshot = await get(ref(db, "players/" + username));
+  if (snapshot.exists()) return msg.textContent = "Username taken";
+  
+  window.playerName = username;
+  window.playerPassword = password;
+  await set(ref(db, "players/" + username), { password, inventory: [] });
+  document.getElementById("loginScreen").style.display = "none";
+};
+
+// Delete Account Logic
+const deleteBtn = document.createElement('button');
+deleteBtn.textContent = "Delete Account";
+deleteBtn.style.cssText = "position:fixed; bottom:10px; right:70px; z-index:150; background:red; color:white; border:none; padding:5px; cursor:pointer; border-radius:5px;";
+document.body.appendChild(deleteBtn);
+
+deleteBtn.onclick = async () => {
+  if (confirm("Delete everything? This cannot be undone.")) {
+    if (window.playerName) {
+      await remove(ref(db, "players/" + window.playerName));
+      location.reload();
+    }
+  }
+};
+
+// Auto-save loop (5 seconds)
+setInterval(saveToFirebase, 5000);
+
+// Immediate save on catch
+document.getElementById("throwBall").addEventListener('click', () => {
+  setTimeout(saveToFirebase, 2000);
+});
+
+</script>
