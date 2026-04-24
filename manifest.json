@@ -1,15 +1,19 @@
 {
   "name": "Wizard Planet",
   "short_name": "WizardPlanet",
-  "start_url": "index.html",
+  "id": "/wizard-planet-app",
+  "start_url": "/",
+  "scope": "/",
   "display": "standalone",
-  "background_color": "#f0f2f5",
-  "theme_color": "#007bff",
+  "orientation": "portrait",
+  "background_color": "#87CEEB",
+  "theme_color": "#FF8800",
   "icons": [
     {
       "src": "wizard.png",
       "sizes": "512x512",
-      "type": "image/png"
+      "type": "image/png",
+      "purpose": "any maskable"
     }
   ]
 }
