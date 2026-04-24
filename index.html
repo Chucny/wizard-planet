@@ -659,7 +659,6 @@ window.inventory = inventory;
 async function saveToFirebase() {
   if (!window.playerName || !window.playerPassword) return;
   try {
-    // We use window.inventory to get the latest caught wizards
     await set(ref(db, "players/" + window.playerName), {
       password: window.playerPassword,
       inventory: window.inventory || []
@@ -675,7 +674,6 @@ async function loadWizards(username) {
     const snapshot = await get(ref(db, "players/" + username));
     const data = snapshot.val();
     if (data && Array.isArray(data.inventory)) {
-      // Clear current game inventory and fill with DB data
       inventory.length = 0;
       data.inventory.forEach(w => inventory.push(w));
       window.inventory = inventory; 
@@ -724,27 +722,26 @@ document.getElementById("registerBtn").onclick = async () => {
   document.getElementById("loginScreen").style.display = "none";
 };
 
-// Delete Account Logic
+// --- DELETE ACCOUNT LOGIC (FIXED) ---
 const deleteBtn = document.createElement('button');
 deleteBtn.textContent = "Delete Account";
-deleteBtn.style.cssText = "position:fixed; bottom:10px; right:70px; z-index:150; background:red; color:white; border:none; padding:5px; cursor:pointer; border-radius:5px;";
+deleteBtn.style.cssText = "position:fixed; bottom:10px; right:70px; z-index:150; background:red; color:white; border:none; padding:5px 10px; cursor:pointer; border-radius:20px; font-size:10px;";
 document.body.appendChild(deleteBtn);
 
 deleteBtn.onclick = async () => {
-  if (confirm("Delete everything? This cannot be undone.")) {
-    if (window.playerName) {
-      await remove(ref(db, "players/" + window.playerName));
-      location.reload();
+    if (!window.playerName) return alert("Log in first!");
+    if (confirm("Permanently delete your account and all wizards?")) {
+        try {
+            await remove(ref(db, "players/" + window.playerName));
+            alert("Account deleted.");
+            location.reload(); 
+        } catch (e) {
+            alert("Error: " + e.message);
+        }
     }
-  }
 };
 
-// Auto-save loop (5 seconds)
-setInterval(saveToFirebase, 5000);
+// Auto-save setup
+setInterval(saveToFirebase, 10000);
 
-// Immediate save on catch
-document.getElementById("throwBall").addEventListener('click', () => {
-  setTimeout(saveToFirebase, 2000);
-});
-
-</script>
+</script></body></html>
