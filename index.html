@@ -798,6 +798,115 @@ window.getDistance = function(lat1, lon1, lat2, lon2) {
     return R * c;
 };
 
+// =============================================================================
+// AR MODE OVERRIDE & CAMERA LOGIC
+// =============================================================================
 
+// 1. Setup AR Video Element
+const arVideo = document.createElement('video');
+arVideo.id = 'arCamera';
+arVideo.autoplay = true;
+arVideo.setAttribute('playsinline', '');
+arVideo.style.cssText = "position:absolute; top:0; left:0; width:100%; height:100%; object-fit:cover; display:none; z-index:1;";
+document.getElementById('catchScreen').prepend(arVideo);
+
+// 2. State Management
+let arEnabled = false;
+const catchBackground = "url('https://images2.alphacoders.com/117/11762.jpg')";
+const raidBackground = "url('https://wallup.net/wp-content/uploads/2016/05/02/274452-architecture-nature-trees-Sun-pillar-stone-Colosseum-Rome-Italy-capital-stairs-sunlight-path-field-grass-arena-arch-building-monuments.jpg')";
+
+// 3. Camera Control with Fallback
+async function startAR(targetScreen) {
+    const constraints = [
+        { video: { facingMode: { exact: "environment" } } }, // Back camera
+        { video: { facingMode: "environment" } },           // Back camera (relaxed)
+        { video: true }                                     // Any (Front)
+    ];
+
+    for (let config of constraints) {
+        try {
+            const stream = await navigator.mediaDevices.getUserMedia(config);
+            arVideo.srcObject = stream;
+            arVideo.style.display = "block";
+            
+            // Apply to the specific screen calling it
+            targetScreen.style.backgroundImage = "none";
+            targetScreen.style.backgroundColor = "transparent";
+            
+            // Move video element to the current active screen
+            targetScreen.prepend(arVideo);
+            
+            arEnabled = true;
+            updateBtnText();
+            return;
+        } catch (e) {
+            console.log("Retrying camera configuration...");
+        }
+    }
+    alert("Camera not found or permission denied.");
+    arEnabled = false;
+}
+
+function stopAR(targetScreen, originalBG) {
+    if (arVideo.srcObject) {
+        arVideo.srcObject.getTracks().forEach(track => track.stop());
+        arVideo.srcObject = null;
+    }
+    arVideo.style.display = "none";
+    targetScreen.style.backgroundImage = originalBG;
+    arEnabled = false;
+    updateBtnText();
+}
+
+function updateBtnText() {
+    const btn = document.getElementById('arToggleBtn');
+    if(btn) btn.textContent = arEnabled ? "AR: ON" : "AR: OFF";
+}
+
+// 4. UI Toggle Button
+const arBtn = document.createElement('button');
+arBtn.id = "arToggleBtn";
+arBtn.textContent = "AR: OFF";
+arBtn.style.cssText = "position:absolute; top:20px; left:20px; z-index:1000; padding:10px; border-radius:20px; background:rgba(0,0,0,0.6); color:white; border:none; font-weight:bold;";
+arBtn.onclick = () => {
+    const activeScreen = document.getElementById('catchScreen').style.display === "block" 
+        ? document.getElementById('catchScreen') 
+        : document.getElementById('raidBattleScreen');
+    
+    const bg = activeScreen.id === "catchScreen" ? catchBackground : raidBackground;
+    
+    if (arEnabled) stopAR(activeScreen, bg);
+    else startAR(activeScreen);
+};
+document.body.appendChild(arBtn);
+
+// 5. Overriding Global Functions to support AR
+const oldOpenCatch = window.openCatchScreen;
+window.openCatchScreen = function(data) {
+    if(oldOpenCatch) oldOpenCatch(data);
+    arBtn.style.display = "block"; // Show toggle
+    // Ensure game elements are visible over video
+    document.getElementById('catchWizardBall').style.zIndex = "10";
+    document.getElementById('throwBall').style.zIndex = "10";
+};
+
+const oldCloseCatch = window.closeCatchScreen;
+window.closeCatchScreen = function() {
+    if(oldCloseCatch) oldCloseCatch();
+    stopAR(document.getElementById('catchScreen'), catchBackground);
+    arBtn.style.display = "none";
+};
+
+const oldShowRaid = window.showRaidBattleScreen;
+window.showRaidBattleScreen = function(boss) {
+    if(oldShowRaid) oldShowRaid(boss);
+    arBtn.style.display = "block";
+    // Ensure raid elements are visible
+    document.getElementById('raidBossCircle').style.zIndex = "10";
+    document.getElementById('raidPlayerWizard').style.zIndex = "10";
+};
+
+// Initial state
+arBtn.style.display = "none";
 
 </script>
