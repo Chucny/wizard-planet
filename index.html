@@ -1,6 +1,22 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+
+<script>
+
+
+
+let CURRENT_RAID_SHAPE_SIDES = 3; 
+let BOSS_HP_VAR = 2000;
+
+
+</script>
+
+
+
+
+
+
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Wizard Planet</title>
@@ -1324,4 +1340,93 @@ createWizardCard = function(wizardData) {
 
 // 2. Ensure Inventory refreshes correctly when searching
 // (This hooks into your existing openInventory logic)
-console.log("Release and Rename features initialized.");</script>
+console.log("Release and Rename features initialized.");
+
+// ====================== SHINY RAID SYSTEM ======================
+
+// Override the collection function to add a 1/10 shiny chance
+// ====================== DYNAMIC SHAPE SYSTEM ======================
+
+// ====================== DYNAMIC SHAPE & SHINY SYSTEM ======================
+
+// SET THE CURRENT EVENT SHAPE HERE: 3=Triangle, 4=Square, 5=Pentagon, 6=Hexagon, 8=Octagon
+
+
+// Helper to generate the polygon shape
+function getPolygonPath(sides) {
+    if (!sides || sides < 3) return "none";
+    const points = [];
+    for (let i = 0; i < sides; i++) {
+        const angle = (i / sides) * (2 * Math.PI) - (Math.PI / 2);
+        const x = 50 + 50 * Math.cos(angle);
+        const y = 50 + 50 * Math.sin(angle);
+        points.push(`${x.toFixed(2)}% ${y.toFixed(2)}%`);
+    }
+    return `polygon(${points.join(', ')})`;
+}
+
+// 1. Fixed Reward Logic (Added missing comma)
+collectPolygonFromRaid = function(boss) {
+    const isShiny = Math.random() < 0.10;
+    const raidReward = {
+        id: "polygon-" + Date.now(),
+        name: isShiny ? "✨ SHINY " + boss.name : boss.name,
+        color: isShiny ? "white" : (boss.color || "purple"), // Comma was missing here!
+        iv: [
+            6 + Math.floor(Math.random() * 5),
+            6 + Math.floor(Math.random() * 5),
+            6 + Math.floor(Math.random() * 5)
+        ].join("/"),
+        shiny: isShiny,
+        shapeSides: boss.shapeSides || CURRENT_RAID_SHAPE_SIDES
+    };
+
+    openCatchScreen(raidReward);
+    if(isShiny) alert("LUCKY! This Raid Boss is SHINY!");
+};
+
+// 2. Update Catch Screen to show the correct shape
+const originalOpenCatchScreen1 = openCatchScreen;
+openCatchScreen = function(wizardData) {
+    originalOpenCatchScreen1(wizardData);
+    const sides = wizardData.shapeSides || (wizardData.shape === "octagon" ? 8 : 0);
+    
+    if (sides >= 3) {
+        catchWizardElem.style.clipPath = getPolygonPath(sides);
+        catchWizardElem.style.borderRadius = "0";
+    } else {
+        catchWizardElem.style.clipPath = "none";
+        catchWizardElem.style.borderRadius = "50%";
+    }
+};
+
+// 3. Update Raid Screen Boss Shape
+const originalShowRaidBattleScreen1 = showRaidBattleScreen;
+showRaidBattleScreen = function(boss) {
+    boss.shapeSides = boss.shapeSides || CURRENT_RAID_SHAPE_SIDES;
+    originalShowRaidBattleScreen1(boss);
+    raidBossCircleElem.style.clipPath = getPolygonPath(boss.shapeSides);
+    raidBossCircleElem.style.borderRadius = "0";
+};
+
+// 4. Update Inventory Card Shape
+const originalCreateWizardCard1 = createWizardCard;
+createWizardCard = function(wizardData) {
+    const card = originalCreateWizardCard1(wizardData);
+    const colorDiv = card.querySelector(".wizard-color");
+    const sides = wizardData.shapeSides || (wizardData.shape === "octagon" ? 8 : 0);
+    
+    if (sides >= 3) {
+        colorDiv.style.clipPath = getPolygonPath(sides);
+        colorDiv.style.borderRadius = "0";
+    }
+    return card;
+};
+
+// 5. Update Boss Creator to assign the current event shape
+const originalCreateRaidBoss = createRaidBoss;
+createRaidBoss = function(hp = BOSS_HP_VAR) {
+    const boss = originalCreateRaidBoss(hp);
+    boss.shapeSides = CURRENT_RAID_SHAPE_SIDES;
+    return boss;
+};</script>
