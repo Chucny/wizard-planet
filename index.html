@@ -145,20 +145,37 @@ function drawMap(lat,lng) {
     player.style.top = window.innerHeight/2+"px";
 }
 async function updateMapWithCurrentLocation() {
-    if (navigator.geolocation){
-        navigator.geolocation.getCurrentPosition(pos=>{
-            drawMap(pos.coords.latitude, pos.coords.longitude);
-        }, async () => {
-            try{
-                const res=await fetch("https://api.codetabs.com/v1/geolocation/json");
-                const data=await res.json();
-                drawMap(data.latitude,data.longitude);
-            }catch(e){}
-        }, {enableHighAccuracy:true,timeout:5000});
+    if (navigator.geolocation) {
+        // We define the options here
+        const options = {
+            enableHighAccuracy: true, // Forces the GPS hardware on
+            timeout: 10000,           // Increased to 10 seconds
+            maximumAge: 0             // Forces a fresh location, not a cached one
+        };
+
+        navigator.geolocation.getCurrentPosition(
+            (pos) => {
+                // SUCCESS: We got a real GPS lock
+                console.log("GPS Lock Acquired");
+                drawMap(pos.coords.latitude, pos.coords.longitude);
+            }, 
+            async (error) => {
+                // FAIL: Only use IP location if GPS fails or times out
+                console.log("GPS failed or timed out. Falling back to IP...");
+                try {
+                    const res = await fetch("https://api.codetabs.com/v1/geolocation/json");
+                    const data = await res.json();
+                    drawMap(data.latitude, data.longitude);
+                } catch (e) {
+                    console.error("Total location failure:", e);
+                }
+            }, 
+            options
+        );
     }
 }
 updateMapWithCurrentLocation();
-setInterval(updateMapWithCurrentLocation,30000);
+setInterval(updateMapWithCurrentLocation,15000);
 
 // ====================== WIZARDS & INVENTORY ======================
 function getRandomColor(){ return ['red','green','blue','purple','yellow','gold'][Math.floor(Math.random()*6)]; }
