@@ -46,6 +46,19 @@ html, body { margin:0; padding:0; width:100%; height:100%; overflow:hidden; font
 #raidBossHP { height:100%; width:100%; background:red; border-radius:10px; }
 #raidBossCircle { width:120px; height:120px; border-radius:50%; margin-bottom:40px; }
 #raidPlayerWizard { width:60px; height:60px; border-radius:50%; background:yellow; position:relative; }
+@keyframes wizardAttack {
+    0% { transform: translate(0, 0) scale(1); }
+    50% { transform: translate(0, -30px) scale(1.1); } /* Jump up and get slightly bigger */
+    100% { transform: translate(0, 0) scale(1); }
+}
+
+.attacking {
+    animation: wizardAttack 0.4s ease-out;
+}
+#inventoryPanel {
+    flex-direction: column; /* Stack search bar on top of cards */
+    align-items: stretch;
+}
 </style>
 </head>
 <body>
@@ -192,7 +205,42 @@ function createWizardCard(wizardData){
     card.append(nameDiv,colorDiv,starDiv,statsDiv);
     return card;
 }
-function openInventory(){ inventoryPanel.innerHTML=""; inventory.forEach(w=>inventoryPanel.appendChild(createWizardCard(w))); inventoryPanel.style.display="flex"; }
+
+function openInventory() {
+    inventoryPanel.innerHTML = "";
+    
+    // 1. Create Search Container
+    const searchContainer = document.createElement("div");
+    searchContainer.style.cssText = "width:100%; padding:10px; position:sticky; top:0; background:rgba(175,228,222,1); z-index:10; display:flex; gap:10px;";
+    
+    const searchInput = document.createElement("input");
+    searchInput.placeholder = "Search wizards by name...";
+    searchInput.style.cssText = "flex:1; padding:8px; border-radius:5px; border:1px solid #444;";
+    
+    searchContainer.appendChild(searchInput);
+    inventoryPanel.appendChild(searchContainer);
+
+    // 2. Create a wrapper for the cards
+    const cardWrapper = document.createElement("div");
+    cardWrapper.style.cssText = "display:flex; flex-wrap:nowrap; gap:10px; padding-bottom:10px;";
+    inventoryPanel.appendChild(cardWrapper);
+
+    // 3. Function to render filtered list
+    const renderWizards = (filter = "") => {
+        cardWrapper.innerHTML = "";
+        const filtered = inventory.filter(w => 
+            w.name.toLowerCase().includes(filter.toLowerCase())
+        );
+        filtered.forEach(w => cardWrapper.appendChild(createWizardCard(w)));
+    };
+
+    // 4. Initial render and search event
+    renderWizards();
+    searchInput.addEventListener("input", (e) => renderWizards(e.target.value));
+
+    inventoryPanel.style.display = "flex";
+}
+
 function closeInventory(){ inventoryPanel.style.display="none"; }
 inventoryButton.addEventListener("click",()=>{ inventoryPanel.style.display==="none" ? openInventory() : closeInventory(); });
 
@@ -296,17 +344,17 @@ function connectMQTT(code){
         console.log("✅ Connected");
         mqttClient.subscribe(RAID_TOPIC_PREFIX + code);
         
+        
         if(raidHost){
-            // Host sends initial state
-            mqttClient.publish(RAID_TOPIC_PREFIX + code, JSON.stringify({type:"raidState", raid:raidActive}));
-        } else {
-            // Joiner announces themselves
-            mqttClient.publish(RAID_TOPIC_PREFIX + code, JSON.stringify({
-                type:"joinRaid",
-                playerName: prompt("Your trainer name?") || "Player",
-                wizards: Array.from({length:6},(_,i)=>({name:`Wizard-${i+1}`, damagePerSec:5}))
-            }));
-        }
+    mqttClient.publish(RAID_TOPIC_PREFIX + code, JSON.stringify({type:"raidState", raid:raidActive}));
+} else {
+    // Joiner now uses window.playerName instead of prompt
+    mqttClient.publish(RAID_TOPIC_PREFIX + code, JSON.stringify({
+        type:"joinRaid",
+        playerName: window.playerName || "Guest", 
+        wizards: Array.from({length:6},(_,i)=>({name:`Wizard-${i+1}`, damagePerSec:5}))
+    }));
+}
     });
 
     mqttClient.on('message', (topic, payload) => {
@@ -340,11 +388,15 @@ function createRaid(){
     raidActive = {
         code: currentRaidCode,
         boss: createRaidBoss(),
-        players: [{name: prompt("Your trainer name?")||"Host", wizards:Array.from({length:6},(_,i)=>({name:`Wizard-${i+1}`,damagePerSec:5}))}],
+        // Changed prompt to window.playerName
+        players: [{
+            name: window.playerName || "Host", 
+            wizards: Array.from({length:6},(_,i)=>({name:`Wizard-${i+1}`, damagePerSec:5}))
+        }],
         timer: RAID_TIME
     };
     connectMQTT(currentRaidCode);
-    alert(`🌍 RAID CREATED!\nCode: ${currentRaidCode}\nShare this code\nBoss: ${raidActive.boss.name}`);
+    alert(`🌍 RAID CREATED!\nCode: ${currentRaidCode}\nBoss: ${raidActive.boss.name}`);
     showRaidBattleScreen(raidActive.boss);
     startRaidBattleLoop();
 }
@@ -501,6 +553,30 @@ style.textContent = `
 `;
 document.head.appendChild(style);
 
+
+// Function to make the player wizard bounce
+function animateWizardAttack() {
+    const playerWizard = document.getElementById('raidPlayerWizard');
+    if (!playerWizard) return;
+
+    // Remove class if it exists to reset the animation
+    playerWizard.classList.remove('attacking');
+    
+    // Trigger reflow to allow the animation to restart
+    void playerWizard.offsetWidth; 
+    
+    // Add the class to start the jump
+    playerWizard.classList.add('attacking');
+}
+
+// Hook into the raid loop
+// We can use an interval that checks if the raid screen is visible
+setInterval(() => {
+    const raidScreen = document.getElementById('raidBattleScreen');
+    if (raidScreen && raidScreen.style.display === "flex") {
+        animateWizardAttack();
+    }
+}, 1000); // Bounces every 1 second (matching the DPS tick)
 
 
 let lastPos = null;
