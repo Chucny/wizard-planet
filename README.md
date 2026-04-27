@@ -44,5 +44,4 @@ Built using a "no-framework" approach for maximum performance and low latency:
 
 > **Developer Note:** This project was designed to explore the limits of the mobile web browser as a gaming platform.<br><strong>Copyright &copy; Chucny 2026</strong>
 
----
-© 2026 Wizard Planet • Built with focus on privacy and performance.
+
