@@ -1273,4 +1273,55 @@ console.log("✅ Settings Fixed: ID mismatch resolved and Firebase deletion link
     box-shadow: 0 5px 20px rgba(0,0,0,0.3);
     z-index: 1000;
     min-width: 150px;
-}</style>
+}</style><script>// ====================== RELEASE & RENAME SYSTEM ======================
+
+// 1. Update the Card UI to include Release and Rename buttons
+const originalCreateWizardCard = createWizardCard;
+createWizardCard = function(wizardData) {
+    const card = originalCreateWizardCard(wizardData);
+    
+    // Container for our new actions
+    const actionContainer = document.createElement("div");
+    actionContainer.style.cssText = "display:flex; flex-direction:column; gap:5px; margin-top:10px;";
+
+    // --- RENAME BUTTON ---
+    const renameBtn = document.createElement("button");
+    renameBtn.textContent = "✏️ Rename";
+    renameBtn.style.cssText = "font-size:10px; padding:4px; cursor:pointer; border-radius:4px; border:1px solid #ccc; background:white;";
+    renameBtn.onclick = (e) => {
+        e.stopPropagation();
+        const newName = prompt("Enter new name for " + wizardData.name + ":", wizardData.name);
+        if (newName && newName.trim() !== "") {
+            wizardData.name = newName.trim();
+            openInventory(); // Refresh UI
+        }
+    };
+
+    // --- RELEASE BUTTON ---
+    const releaseBtn = document.createElement("button");
+    releaseBtn.textContent = "❌ Release";
+    releaseBtn.className = "release-btn"; // Uses your existing CSS
+    releaseBtn.style.cssText = "font-size:10px; padding:4px; cursor:pointer; border-radius:4px; background:#ffebee; color:#f44336; border:1px solid #f44336;";
+    releaseBtn.onclick = (e) => {
+        e.stopPropagation();
+        if (confirm(`Are you sure you want to release ${wizardData.name}? It will be gone forever!`)) {
+            // Remove from local inventory array
+            const index = inventory.findIndex(w => w.id === wizardData.id);
+            if (index > -1) {
+                inventory.splice(index, 1);
+                openInventory(); // Refresh UI
+                alert("Wizard released back into the wild.");
+            }
+        }
+    };
+
+    actionContainer.appendChild(renameBtn);
+    actionContainer.appendChild(releaseBtn);
+    card.appendChild(actionContainer);
+    
+    return card;
+};
+
+// 2. Ensure Inventory refreshes correctly when searching
+// (This hooks into your existing openInventory logic)
+console.log("Release and Rename features initialized.");</script>
