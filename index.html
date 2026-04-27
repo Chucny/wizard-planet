@@ -908,5 +908,28 @@ window.showRaidBattleScreen = function(boss) {
 
 // Initial state
 arBtn.style.display = "none";
+// =============================================================================
+// TIME-BASED SPAWNING OVERRIDE (Every 10 Seconds)
+// =============================================================================
 
+console.log("🛰️ GPS Spawning: ACTIVE");
+
+// 2. ADD THE 10-SECOND TIMER
+setInterval(() => {
+    // Only spawn if player is logged in and not in a menu
+    const isLogged = window.playerName;
+    const isMapVisible = document.getElementById('loginScreen').style.display === "none";
+    const isCatching = document.getElementById('catchScreen').style.display === "block";
+    const isRaiding = document.getElementById('raidBattleScreen').style.display === "block";
+
+    if (isLogged && isMapVisible && !isCatching && !isRaiding) {
+        
+        // Spawn at a random spot on the map
+        const x = Math.random() * (window.innerWidth - 100) + 50;
+        const y = Math.random() * (window.innerHeight - 100) + 50;
+
+        spawnWizardBall(x, y);
+        console.log("⏱️ Timer Spawn: A wizard appeared!");
+    }
+}, 20000);
 </script>
