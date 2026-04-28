@@ -1470,3 +1470,161 @@ window.joinRaid = function() {
     originalJoinRaid();
 };
 </script>
+
+<style>
+    /* 1. Setup Fog and Perspective */
+    body {
+        perspective: 1200px;
+        background-color: #add8e6; /* Match fog color */
+        margin: 0;
+        overflow: hidden;
+    }
+    #map {
+        transform-style: preserve-3d;
+        transition: transform 0.1s ease-out;
+    }
+    /* The Foggy Horizon Overlay */
+    body::after {
+        content: "";
+        position: fixed;
+        top: 0; left: 0; width: 100%; height: 100%;
+        background: linear-gradient(to bottom, 
+            rgba(173, 216, 230, 1) 0%, 
+            rgba(173, 216, 230, 0.8) 20%, 
+            rgba(173, 216, 230, 0) 60%);
+        pointer-events: none;
+        z-index: 999;
+    }
+</style>
+
+<script>
+(function() {
+    // Scene State
+    let angle = 0;
+    let isDragging = false;
+    let startX = 0;
+    const map = document.getElementById('map');
+
+    // --- 1. The Render Function ---
+    function update3D() {
+        // Tilt the ground and spin it
+        // translateY shifts the "center" so the bottom of the map isn't cut off
+        map.style.transform = `rotateX(60deg) translateY(150px) rotateZ(${angle}deg)`;
+
+        // Force Player and Wizards to stay FLAT (Parallel to ground)
+        const entities = document.querySelectorAll('#player, .red-ball');
+        entities.forEach(el => {
+            el.style.transform = `translate(-50%, -50%)`; 
+            // We do NOT use rotateX here so they don't stand up
+        });
+    }
+
+    // --- 2. Fixed Scrolling Logic (Natural Grab & Pull) ---
+    const handleStart = (x) => {
+        isDragging = true;
+        startX = x;
+    };
+
+    const handleMove = (x) => {
+        if (!isDragging) return;
+        let dx = x - startX;
+        angle -= dx * 0.4; // Pull right = map turns left
+        startX = x;
+        update3D();
+    };
+
+    const handleEnd = () => { isDragging = false; };
+
+    // Global Listeners to prevent "stuck" scrolling
+    window.addEventListener('mousedown', (e) => handleStart(e.clientX));
+    window.addEventListener('mousemove', (e) => handleMove(e.clientX));
+    window.addEventListener('mouseup', handleEnd);
+
+    window.addEventListener('touchstart', (e) => handleStart(e.touches[0].clientX));
+    window.addEventListener('touchmove', (e) => handleMove(e.touches[0].clientX));
+    window.addEventListener('touchend', handleEnd);
+
+    // --- 3. Fix the "Buried/Corner" Spawn Issue ---
+    // Highjack spawn function to ensure wizards are children of the map
+    const originalSpawn = window.spawnWizardBall;
+    window.spawnWizardBall = function(x, y, data) {
+        originalSpawn(x, y, data);
+        const balls = document.getElementsByClassName('red-ball');
+        const latest = balls[balls.length - 1];
+        if (latest && latest.parentElement !== map) {
+            map.appendChild(latest);
+        }
+        update3D();
+    };
+
+    // Initial Run
+    update3D();
+    console.log("3D Perspective Initialized: Flat Wizards & Fog active.");
+})();
+</script>
+
+
+<style>
+    /* 1. Remove the old fog that covered the whole screen */
+    body::after {
+        display: none !important;
+    }
+
+    /* 2. Create a Fog Overlay specifically for the Map */
+    #map-fog {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        /* Gradient matches your background color to hide the map edge */
+        background: linear-gradient(to bottom, 
+            rgba(173, 216, 230, 1) 0%, 
+            rgba(173, 216, 230, 0.8) 25%, 
+            rgba(173, 216, 230, 0) 60%);
+        pointer-events: none; /* Allows clicking through the fog to the map */
+        z-index: 5; /* Higher than map tiles, but LOWER than your UI buttons */
+    }
+
+    /* 3. Ensure UI buttons are always on top of the fog */
+    #raidUIContainer, #inventoryBtn, #settingsBtn, .ui-element {
+        z-index: 1000 !important;
+    }
+</style>
+
+<script>
+(function() {
+    // Create the fog element if it doesn't exist
+    if (!document.getElementById('map-fog')) {
+        const fog = document.createElement('div');
+        fog.id = 'map-fog';
+        // Insert it before the UI elements
+        document.body.appendChild(fog);
+    }
+})();
+// Function to toggle global UI visibility
+function setGlobalUIVisibility(visible) {
+    const display = visible ? "flex" : "none";
+    document.getElementById('raidUIContainer').style.display = display;
+    document.getElementById('inventoryButton').style.display = display;
+}
+
+// Update existing functions to hide/show UI
+const originalOpenCatch = openCatchScreen;
+openCatchScreen = function(data) {
+    setGlobalUIVisibility(false);
+    originalOpenCatch(data);
+};
+
+const originalCloseCatch = closeCatchScreen;
+closeCatchScreen = function() {
+    setGlobalUIVisibility(true);
+    originalCloseCatch();
+};
+
+const originalShowRaid = showRaidBattleScreen;
+showRaidBattleScreen = function(boss) {
+    setGlobalUIVisibility(false);
+    originalShowRaid(boss);
+};
+</script>
