@@ -53,7 +53,6 @@ html, body { margin:0; padding:0; width:100%; height:100%; overflow:hidden; font
 #savebutton { position:fixed; bottom:10px; left:10px; z-index:150; }
 /* --- Raid UI --- */
 #raidUI { position:fixed; top:10px; right:10px; z-index:300; display:flex; flex-direction:column; gap:5px; }
-#raidUI button { padding:5px 10px; font-weight:bold; border-radius:5px; cursor:pointer; }
 /* --- RAID BATTLE SCREEN --- */
 #raidBattleScreen { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background-image:ur[](https://wallup.net/wp-content/uploads/2016/05/02/274452-architecture-nature-trees-Sun-pillar-stone-Colosseum-Rome-Italy-capital-stairs-sunlight-path-field-grass-arena-arch-building-monuments.jpg); z-index:500; flex-direction:column; align-items:center; justify-content:flex-start; padding-top:50px; }
 #raidTimer { width:60px; height:60px; border-radius:50%; background:orange; color:white; display:flex; align-items:center; justify-content:center; font-size:20px; font-weight:bold; margin-bottom:20px; }
@@ -164,10 +163,7 @@ html, body { margin:0; padding:0; width:100%; height:100%; overflow:hidden; font
 
 
 <!-- Raid UI -->
-<div id="raidUI">
-    <button onclick="createRaid()">Create Raid</button>
-    <button onclick="joinRaid()">Join Raid</button>
-</div>
+
 
 <!-- RAID BATTLE SCREEN -->
 <div id="raidBattleScreen">
@@ -191,6 +187,16 @@ html, body { margin:0; padding:0; width:100%; height:100%; overflow:hidden; font
 
 <script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
 
+
+<div id="raidUIContainer" style="position: fixed; top: 20px; right: 20px; z-index: 300; display: flex; flex-direction: column; align-items: flex-end;">
+    <button id="raidMenuBtn" style="width: 50px; height: 50px; border-radius: 50%; background: linear-gradient(135deg, #ff4757, #ff6b81); border: 3px solid white; color: white; font-size: 24px; cursor: pointer; box-shadow: 0 4px 10px rgba(0,0,0,0.3);">⚔️</button>
+    
+    <div id="raidMenuContent" style="display: none; margin-top: 10px; flex-direction: column; gap: 8px;">
+        <button onclick="createRaid()" style="background: #4facfe; color: white; border: 2px solid white; border-radius: 20px; padding: 10px 20px; font-weight: bold; cursor: pointer; white-space: nowrap;">Create Raid</button>
+        <button onclick="joinRaid()" style="background: #00f2fe; color: white; border: 2px solid white; border-radius: 20px; padding: 10px 20px; font-weight: bold; cursor: pointer; white-space: nowrap;">Join Raid</button>
+    </div>
+</div>    
+   
 <script>
 // ====================== CORE GAME ======================
 const TILE_SIZE = 256;
@@ -1429,4 +1435,38 @@ createRaidBoss = function(hp = BOSS_HP_VAR) {
     const boss = originalCreateRaidBoss(hp);
     boss.shapeSides = CURRENT_RAID_SHAPE_SIDES;
     return boss;
-};</script>
+};
+
+
+
+
+// Toggle Raid Menu Logic
+document.getElementById('raidMenuBtn').onclick = function() {
+    const content = document.getElementById('raidMenuContent');
+    if (content.style.display === "none" || content.style.display === "") {
+        content.style.display = "flex";
+        this.style.transform = "scale(0.9)"; // Slight squash effect when open
+    } else {
+        content.style.display = "none";
+        this.style.transform = "scale(1)";
+    }
+};
+
+// Close menu automatically when a sub-button is clicked
+function closeRaidMenu() {
+    document.getElementById('raidMenuContent').style.display = "none";
+}
+
+// Hook into your existing functions to auto-close the menu
+const originalCreateRaid = window.createRaid;
+window.createRaid = function() {
+    closeRaidMenu();
+    originalCreateRaid();
+};
+
+const originalJoinRaid = window.joinRaid;
+window.joinRaid = function() {
+    closeRaidMenu();
+    originalJoinRaid();
+};
+</script>
