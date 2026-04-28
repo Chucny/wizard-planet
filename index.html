@@ -340,13 +340,18 @@ function openInventory() {
 
     // 3. Function to render filtered list
     const renderWizards = (filter = "") => {
-        cardWrapper.innerHTML = "";
-        const filtered = inventory.filter(w => 
-            w.name.toLowerCase().includes(filter.toLowerCase())
-        );
-        filtered.forEach(w => cardWrapper.appendChild(createWizardCard(w)));
-    };
-
+    cardWrapper.innerHTML = "";
+    const filtered = inventory.filter(w => 
+        w && w.name && w.name.toLowerCase().includes(filter.toLowerCase())
+    );
+    filtered.forEach(w => {
+        const card = createWizardCard(w);
+        // ONLY append if createWizardCard actually returned an element
+        if (card) {
+            cardWrapper.appendChild(card);
+        }
+    });
+};
     // 4. Initial render and search event
     renderWizards();
     searchInput.addEventListener("input", (e) => renderWizards(e.target.value));
@@ -1628,3 +1633,272 @@ showRaidBattleScreen = function(boss) {
     originalShowRaid(boss);
 };
 </script>
+
+<style>
+    #levelBtnHUD {
+        position: fixed; top: 85px; right: 20px;
+        width: 54px; height: 54px; border-radius: 50%;
+        background: radial-gradient(circle, #3498db, #2980b9);
+        border: 3px solid #fff; box-shadow: 0 4px 15px rgba(0,0,0,0.4);
+        color: white; font-family: 'Arial Black', sans-serif; font-size: 18px;
+        display: flex; align-items: center; justify-content: center;
+        cursor: pointer; z-index: 9999;
+    }
+    #levelOverlay {
+        display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+        background: rgba(0,0,0,0.85); z-index: 10000; justify-content: center; align-items: center;
+    }
+    .level-card {
+        background: white; width: 85%; max-width: 380px; border-radius: 30px;
+        padding: 30px; text-align: center; font-family: sans-serif;
+    }
+    .lvl-big-number { font-size: 60px; font-weight: 900; color: #3498db; margin: 0; }
+    .xp-container {
+        width: 100%; height: 22px; background: #e0e0e0; border-radius: 11px;
+        margin: 20px 0 10px 0; overflow: hidden; border: 1px solid #ccc;
+    }
+    #xpFill { height: 100%; width: 0%; background: linear-gradient(90deg, #3498db, #2ecc71); transition: width 0.6s; }
+    .close-lvl-btn {
+        margin-top: 20px; padding: 12px 40px; border-radius: 25px; 
+        border: none; background: #34495e; color: white; 
+        font-weight: bold; cursor: pointer;
+    }
+</style>
+
+<div id="levelBtnHUD" onclick="toggleLevelMenu()">1</div>
+
+<div id="levelOverlay">
+    <div class="level-card">
+        <h2 style="margin:0; font-size: 14px; color: #888;">TRAINER LEVEL</h2>
+        <p id="displayLvl" class="lvl-big-number">1</p>
+        <div class="xp-container"><div id="xpFill"></div></div>
+        <div id="xpStatusLabel" style="font-weight:bold; color:#555;">0 / 5 Catches</div>
+        <button class="close-lvl-btn" onclick="toggleLevelMenu()">CLOSE</button>
+    </div>
+</div>
+
+<script>
+    // --- GLOBAL UI ---
+    function toggleLevelMenu() {
+        const overlay = document.getElementById('levelOverlay');
+        const isOpening = overlay.style.display !== 'flex';
+        overlay.style.display = isOpening ? 'flex' : 'none';
+        if (isOpening && window.refreshLevelSystem) window.refreshLevelSystem();
+    }
+
+    // --- THE SPLIT FIXER OVERRIDE ---
+    // We wait a tiny bit to make sure the original function exists, then wrap it
+    window.addEventListener('load', () => {
+        if (typeof window.createWizardCard === 'function') {
+            const oldWizardCard = window.createWizardCard;
+            
+            window.createWizardCard = function(wizard, ...args) {
+                // If this is our XP Tracker, stop immediately. Do not build a card.
+                if (!wizard || wizard.isXpTracker) return null;
+                
+                // If wizard exists but moves/types are missing, add empty strings 
+                // so the original .split(',') doesn't crash
+                if (wizard.moves === undefined) wizard.moves = "";
+                if (wizard.types === undefined) wizard.types = "";
+                
+                return oldWizardCard.apply(this, [wizard, ...args]);
+            };
+            console.log("✅ createWizardCard override applied (Split-Fixer Active)");
+        }
+    });
+</script>
+
+<script type="module">
+    import { getDatabase, ref, update } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-database.js";
+
+    const MAX_LEVEL = 40;
+    const TARGET_WIZARDS = 2000;
+    const getReq = (lvl) => (lvl <= 1) ? 0 : Math.floor(5 * Math.pow(lvl, 1.635));
+
+    // 1. REFRESH LEVEL
+    window.refreshLevelSystem = function() {
+        if (!window.inventory) return;
+        let xpTracker = window.inventory.find(w => w && w.isXpTracker === true);
+        let xp = xpTracker ? xpTracker.xpCount : 0;
+
+        let currentLvl = 1;
+        for (let i = 1; i <= MAX_LEVEL; i++) {
+            if (xp >= getReq(i)) currentLvl = i; else break;
+        }
+
+        const nextXP = currentLvl < MAX_LEVEL ? getReq(currentLvl + 1) : TARGET_WIZARDS;
+        const prevXP = getReq(currentLvl);
+        const progress = currentLvl === MAX_LEVEL ? 100 : ((xp - prevXP) / (nextXP - prevXP)) * 100;
+
+        document.getElementById('levelBtnHUD').textContent = currentLvl;
+        document.getElementById('displayLvl').textContent = currentLvl;
+        document.getElementById('xpFill').style.width = progress + "%";
+        document.getElementById('xpStatusLabel').textContent = `${xp} / ${nextXP} Catches`;
+    };
+
+    // 2. ADD XP
+    window.addPermanentXP = async function() {
+        if (!window.inventory || !window.playerName) return;
+
+        let tracker = window.inventory.find(w => w && w.isXpTracker === true);
+        
+        if (!tracker) {
+            window.inventory.push({ 
+                isXpTracker: true, 
+                xpCount: 1,
+                name: "SYSTEM_DATA",
+                id: "XP_TRACKER",
+                moves: "", // Adding these just in case the filter fails
+                types: "" 
+            });
+        } else {
+            tracker.xpCount++;
+        }
+
+        const db = getDatabase();
+        await update(ref(db, "players/" + window.playerName), {
+            inventory: window.inventory
+        });
+
+        window.refreshLevelSystem();
+    };
+
+    // Hook catch screen
+    const oldClose = window.closeCatchScreen;
+    window.closeCatchScreen = function() {
+        window.addPermanentXP();
+        if(oldClose) oldClose();
+    };
+
+    setTimeout(window.refreshLevelSystem, 2000);
+</script><script>
+// --- HUD VISIBILITY CONTROLLER ---
+function updateHUDVisibility() {
+    const levelBtn = document.getElementById('levelBtnHUD');
+    const login = document.getElementById('loginScreen');
+    const catchS = document.getElementById('catchScreen');
+    const raidS = document.getElementById('raidBattleScreen');
+
+    // If any of these screens are visible, HIDE the level button
+    const shouldHide = (
+        (login && login.style.display !== 'none') || 
+        (catchS && catchS.style.display !== 'none' && catchS.style.display !== '') || 
+        (raidS && raidS.style.display !== 'none' && raidS.style.display !== '')
+    );
+
+    if (levelBtn) {
+        levelBtn.style.display = shouldHide ? 'none' : 'flex';
+    }
+}
+
+// Hook into existing screen logic using a MutationObserver
+// This watches for style changes (like display: none -> block)
+const observer = new MutationObserver(() => updateHUDVisibility());
+const config = { attributes: true, attributeFilter: ['style'] };
+
+// Start watching the screens
+document.addEventListener('DOMContentLoaded', () => {
+    const screens = ['loginScreen', 'catchScreen', 'raidBattleScreen'];
+    screens.forEach(id => {
+        const el = document.getElementById(id);
+        if (el) observer.observe(el, config);
+    });
+    updateHUDVisibility(); // Initial check
+});
+
+// Extra safety: update visibility when these specific functions are called
+const originalOpenCatch = window.openCatchScreen;
+window.openCatchScreen = function(data) {
+    if(originalOpenCatch) originalOpenCatch(data);
+    updateHUDVisibility();
+};
+
+const originalCloseCatch = window.closeCatchScreen;
+window.closeCatchScreen = function() {
+    if(originalCloseCatch) originalCloseCatch();
+    updateHUDVisibility();
+};
+
+const originalShowRaid = window.showRaidBattleScreen;
+window.showRaidBattleScreen = function(boss) {
+    if(originalShowRaid) originalShowRaid(boss);
+    updateHUDVisibility();
+};</script><script>
+// --- 1. THE "VISIBILITY POLICE" ---
+function syncHUDVisibility() {
+    const levelBtn = document.getElementById('levelBtnHUD');
+    if (!levelBtn) return;
+
+    // Check every "Fullscreen" screen
+    const screens = [
+        document.getElementById('loginScreen'),
+        document.getElementById('catchScreen'),
+        document.getElementById('raidBattleScreen')
+    ];
+
+    // If ANY of these screens are currently visible, HIDE the button
+    const isShowingBlockedScreen = screens.some(s => 
+        s && s.style.display !== 'none' && s.style.display !== ''
+    );
+
+    levelBtn.style.setProperty('display', isShowingBlockedScreen ? 'none' : 'flex', 'important');
+    
+    // Also hide it if the login screen is active (initial state)
+    const login = document.getElementById('loginScreen');
+    if (login && login.style.display !== 'none') {
+        levelBtn.style.display = 'none';
+    }
+}
+
+// --- 2. HOOK INTO ALL SCREEN TRANSITIONS ---
+// This ensures that even if CSS fails, the JS functions force it hidden
+const wrap = (fnName, show) => {
+    const original = window[fnName];
+    window[fnName] = function(...args) {
+        if (original) original.apply(this, args);
+        syncHUDVisibility();
+    };
+};
+
+// Force visibility sync when these functions are called
+['openCatchScreen', 'closeCatchScreen', 'showRaidBattleScreen', 'createRaid', 'joinRaid'].forEach(fn => wrap(fn));
+
+// --- 3. THE BACKUP OBSERVER ---
+// Watch for any style changes on the body or the screens themselves
+const hudObserver = new MutationObserver(syncHUDVisibility);
+document.addEventListener('DOMContentLoaded', () => {
+    const targets = ['loginScreen', 'catchScreen', 'raidBattleScreen'];
+    targets.forEach(id => {
+        const el = document.getElementById(id);
+        if (el) hudObserver.observe(el, { attributes: true, attributeFilter: ['style'] });
+    });
+    
+    // Initial check for the login screen
+    syncHUDVisibility();
+});
+
+// Run a check every 500ms just in case (the "fail-safe")
+setInterval(syncHUDVisibility, 500);</script>
+<style>
+    #levelBtnHUD {
+        position: fixed; 
+        top: 85px; 
+        right: 20px;
+        width: 54px; 
+        height: 54px; 
+        border-radius: 50%;
+        background: radial-gradient(circle, #3498db, #2980b9);
+        border: 3px solid #fff; 
+        box-shadow: 0 4px 15px rgba(0,0,0,0.4);
+        color: white; 
+        font-family: 'Arial Black', sans-serif; 
+        font-size: 18px;
+        display: flex; 
+        align-items: center; 
+        justify-content: center;
+        cursor: pointer;
+        
+        /* THE FIX: Lower the z-index so it goes UNDER menus and raid screens */
+        z-index: 500; 
+    }
+</style>
