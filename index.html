@@ -9,6 +9,9 @@
 let CURRENT_RAID_SHAPE_SIDES = 3; 
 let BOSS_HP_VAR = 2000;
 
+const BANNED_PLAYERS = []; // Add usernames to ban here
+
+const ALLOW_COMPUTER = false; // Set to false to block PC/Laptop logins
 
 </script>
 
@@ -863,6 +866,55 @@ document.getElementById("registerBtn").onclick = async () => {
 // Auto-save setup
 setInterval(saveToFirebase, 15000);
 
+
+
+
+// --- BANNED USERNAMES LIST ---
+const BANNED_PLAYERS = ["Hacker123", "Cheater99", "TestUser"]; // Add usernames to ban here
+
+// --- DEVICE SETTINGS ---
+
+
+document.getElementById("loginBtn").onclick = async () => {
+    const username = document.getElementById("loginUsername").value.trim();
+    const password = document.getElementById("loginPassword").value.trim();
+    const msg = document.getElementById("loginMsg");
+    
+    if (!username || !password) return msg.textContent = "Missing info";
+
+    // 1. CHECK THE BAN LIST
+    if (BANNED_PLAYERS.includes(username)) {
+        // Hide login and show termination screen
+        document.getElementById("loginScreen").style.display = "none";
+        
+        // Create the termination screen on the fly
+        const banScreen = document.createElement("div");
+        banScreen.style.cssText = "position:fixed; top:0; left:0; width:100%; height:100%; background:black; color:white; z-index:10000; display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center; font-family:sans-serif;";
+        banScreen.innerHTML = `<h1 style="color:red; font-size:40px;">ACCESS DENIED</h1><p style="font-size:18px;">Your account has been permanently terminated.</p>`;
+        document.body.appendChild(banScreen);
+        return;
+    }
+
+    // 2. CHECK FOR COMPUTER (DESKTOP/LAPTOP)
+    // Detects Windows, Mac, or Linux to identify a computer
+    const isComputer = /Windows|Macintosh|Linux/i.test(navigator.userAgent);
+    if (isComputer && !ALLOW_COMPUTER) {
+        return msg.textContent = "Unsupported device. Please use a mobile phone.";
+    }
+
+    // 3. PROCEED WITH FIREBASE LOGIN
+    const snapshot = await get(ref(db, "players/" + username));
+    const data = snapshot.val();
+
+    if (!data) return msg.textContent = "User not found";
+    if (data.password !== password) return msg.textContent = "Wrong password";
+
+    // Success
+    window.playerName = username;
+    window.playerPassword = password;
+    await loadWizards(username);
+    document.getElementById("loginScreen").style.display = "none";
+};
 </script><script>
 // ====================== FAKE MOVEMENT (FOR TESTING) ======================
 
