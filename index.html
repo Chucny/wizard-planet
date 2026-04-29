@@ -281,7 +281,7 @@ setInterval(updateMapWithCurrentLocation,15000);
 function getRandomColor(){ return ['red','green','blue','purple','yellow','gold'][Math.floor(Math.random()*6)]; }
 function spawnWizardBall(x,y,wizardData=null){
     if(!wizardData){
-        wizardData = {id: wizardIdCounter++, iv:`${Math.floor(Math.random()*10)}/${Math.floor(Math.random()*10)}/${Math.floor(Math.random()*10)}`, color:getRandomColor(), name:'Wizard '+wizardIdCounter, shape:'circle'};
+        wizardData = {id: wizardIdCounter++, iv:`${Math.floor(Math.random()*11)}/${Math.floor(Math.random()*11)}/${Math.floor(Math.random()*11)}`, color:getRandomColor(), name:'Wizard '+wizardIdCounter, shape:'circle'};
     }
     wizards[wizardData.id] = wizardData;
     const ball=document.createElement('div');
