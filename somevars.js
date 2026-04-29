@@ -4,7 +4,7 @@ let BOSS_HP_VAR = 2000;
 
 // anticheat stuff
 
-const ALLOW_COMPUTER = false; // Set to false to block PC/Laptop logins
+const ALLOW_COMPUTER = true; // Set to false to block PC/Laptop logins
 const BANNED_PLAYERS = ["william"]; // Add usernames to ban here
 
 
