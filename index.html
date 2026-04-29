@@ -11,6 +11,7 @@ let BOSS_HP_VAR = 2000;
 
 const BANNED_PLAYERS = ["william"]; // Add usernames to ban here
 
+
 const ALLOW_COMPUTER = true; // Set to false to block PC/Laptop logins
 
 </script>
@@ -774,6 +775,8 @@ if (navigator.geolocation) {
 
 
 <script type="module">
+
+    
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-app.js";
 import { getDatabase, ref, set, get, remove } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-database.js";
 
@@ -870,7 +873,7 @@ setInterval(saveToFirebase, 15000);
 
 
 // --- BANNED USERNAMES LIST ---
-const BANNED_PLAYERS = ["Hacker123", "Cheater99", "TestUser"]; // Add usernames to ban here
+
 
 // --- DEVICE SETTINGS ---
 
