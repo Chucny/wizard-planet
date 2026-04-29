@@ -2,12 +2,7 @@
 <html lang="en">
 <head>
 
-<script src="somevars.js">
-
-
-
-
-
+<script src="somevars.js>
 </script>
 
 
@@ -2072,3 +2067,118 @@ document.getElementById('trophyBtn').onclick = function() {
         <button onclick="document.getElementById('profileHUD').style.display='none'" style="width: 50px; height: 50px; background: #333; color: white; border: none; border-radius: 50%; font-size: 24px; cursor: pointer;">✕</button>
     </div>
 </div>
+<div id="tradeHUD" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: white; z-index: 2000; flex-direction: column; align-items: center; padding-top: 50px; font-family: sans-serif;">
+    <div style="text-align: center; width: 90%;">
+        <h2 id="tradeStatus">Wizard Exchange</h2>
+        <div id="tradeMenu">
+            <button id="btnHost" style="width: 220px; padding: 15px; margin: 10px; border-radius: 30px; border: none; background: #3498db; color: white; font-weight: bold;">HOST TRADE</button>
+            <input type="text" id="tradeCodeInput" placeholder="6-CHAR CODE" maxlength="6" style="display:block; margin: 10px auto; width: 180px; padding: 10px; text-align: center; border-radius: 10px; border: 1px solid #ccc;">
+            <button id="btnJoin" style="width: 220px; padding: 15px; margin: 10px; border-radius: 30px; border: none; background: #2ecc71; color: white; font-weight: bold;">JOIN TRADE</button>
+        </div>
+        <div id="tradeSelection" style="display:none;">
+            <div id="tradeWizardList" style="display: flex; overflow-x: auto; gap: 10px; padding: 15px;"></div>
+        </div>
+        <div id="tradeConfirmArea" style="display:none;">
+            <div style="display: flex; justify-content: space-around; padding: 20px; background: #eee; border-radius: 15px;">
+                <div><small>YOU</small><div id="myOffer" style="font-weight:bold;">?</div></div>
+                <div><small>THEM</small><div id="theirOffer" style="font-weight:bold;">Waiting...</div></div>
+            </div>
+            <button id="confirmTradeBtn" style="margin-top:20px; width: 80%; padding: 15px; border-radius: 30px; border: none; background: #ccc; color: white;" disabled>READY</button>
+        </div>
+        <div style="flex-basis: 100%; height: 30px;"></div>
+        <button onclick="document.getElementById('tradeHUD').style.display='none'" style="color: #999; text-decoration: underline; background:none; border:none; cursor:pointer;">Cancel</button>
+    </div>
+</div>
+<button id="tradeBtn" style="position:fixed; bottom:162px; right:31px; z-index:150; width:50px; height:50px; border:none; background:#3498db; color:white; font-weight:bold; border-radius:50%; cursor:pointer; font-size:20px;">🤝</button>
+<script>
+(function() {
+    let tTopic = null, pReady = false, mReady = false, mySelection = null, theirSelection = null;
+
+   
+
+    // --- INTERNET (MQTT) HANDSHAKE ---
+    function getTradeClient(cb) {
+        if (window.mqttClient && window.mqttClient.connected) return cb(window.mqttClient);
+        window.mqttClient = mqtt.connect("wss://broker.hivemq.com:8884/mqtt", { keepalive: 30 });
+        window.mqttClient.on('connect', () => cb(window.mqttClient));
+    }
+
+    document.getElementById('tradeBtn').onclick = () => {
+        document.getElementById('tradeHUD').style.display = 'flex';
+        pReady = false; mReady = false;
+        document.getElementById('tradeMenu').style.display = 'block';
+        document.getElementById('tradeSelection').style.display = 'none';
+        document.getElementById('tradeConfirmArea').style.display = 'none';
+    };
+
+    document.getElementById('btnHost').onclick = () => {
+        const code = Math.random().toString(36).substring(2, 8).toUpperCase();
+        document.getElementById('tradeStatus').innerText = "ROOM: " + code;
+        getTradeClient(c => initTrade(code, c));
+    };
+
+    document.getElementById('btnJoin').onclick = () => {
+        const code = document.getElementById('tradeCodeInput').value.toUpperCase();
+        if(code.length === 6) getTradeClient(c => initTrade(code, c));
+    };
+
+    function initTrade(code, client) {
+        tTopic = "wizard_planet/trade_v300/" + code;
+        client.subscribe(tTopic);
+        client.removeAllListeners('message');
+        
+        client.on('message', (topic, msg) => {
+            if (topic !== tTopic) return;
+            const data = JSON.parse(msg.toString());
+            if (data.sender === window.playerName) return;
+
+            if (data.type === "offer") {
+                theirSelection = data.wiz;
+                document.getElementById('theirOffer').innerText = data.wiz.name;
+                const b = document.getElementById('confirmTradeBtn');
+                b.disabled = false; b.style.background = "#3498db";
+            } else if (data.type === "confirm") {
+                pReady = true;
+                if (mReady) finalize();
+            }
+        });
+
+        document.getElementById('tradeMenu').style.display = 'none';
+        document.getElementById('tradeSelection').style.display = 'block';
+        
+        const list = document.getElementById('tradeWizardList');
+        list.innerHTML = "";
+        (window.inventory || []).forEach((wiz, idx) => {
+            if(wiz.id === "XP_TRACKER") return;
+            const div = document.createElement('div');
+            div.style = "min-width:100px; padding:10px; background:white; border:2px solid #3498db; border-radius:10px; cursor:pointer; color:black;";
+            div.innerHTML = `<b>${wiz.name}</b>`;
+            div.onclick = () => {
+                mySelection = { ...wiz, idx: idx };
+                document.getElementById('myOffer').innerText = wiz.name;
+                document.getElementById('tradeSelection').style.display = 'none';
+                document.getElementById('tradeConfirmArea').style.display = 'block';
+                client.publish(tTopic, JSON.stringify({ type:"offer", sender:window.playerName, wiz:wiz }));
+            };
+            list.appendChild(div);
+        });
+    }
+
+    document.getElementById('confirmTradeBtn').onclick = function() {
+        mReady = true;
+        this.style.background = "#2ecc71";
+        this.innerText = "READY!";
+        window.mqttClient.publish(tTopic, JSON.stringify({ type:"confirm", sender:window.playerName }));
+        if (pReady) finalize();
+    };
+
+    function finalize() {
+        window.inventory.splice(mySelection.idx, 1);
+        window.inventory.push(theirSelection);
+        if (typeof saveInventoryToFirebase === "function") saveInventoryToFirebase();
+        alert("TRADE SUCCESS!");
+        document.getElementById('tradeHUD').style.display = 'none';
+        if (typeof openInventory === "function") openInventory(); 
+    }
+})();
+</script>
