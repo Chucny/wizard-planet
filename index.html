@@ -2,7 +2,17 @@
 <html lang="en">
 <head>
 
-<script src="somevars.js"></script>
+<script src="somevars.js">
+
+
+
+
+
+</script>
+
+
+
+
 
 
 <meta charset="UTF-8">
@@ -776,6 +786,7 @@ const firebaseConfig = {
 
 const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
+window.db = db;
 
 // Sync game inventory to window so this module can see it
 window.inventory = inventory;
@@ -902,6 +913,7 @@ document.getElementById("loginBtn").onclick = async () => {
     await loadWizards(username);
     document.getElementById("loginScreen").style.display = "none";
 };
+
 </script><script>
 // ====================== FAKE MOVEMENT (FOR TESTING) ======================
 
@@ -1941,3 +1953,122 @@ setInterval(syncHUDVisibility, 500);</script>
         z-index: 500; 
     }
 </style>
+<script type="module">
+    import { ref, set, get } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+
+    window.addEventListener('load', () => {
+        const regBtn = document.getElementById('registerBtn');
+        
+        if (regBtn) {
+            regBtn.onclick = async function() {
+                const activeDb = window.db; 
+
+                if (!activeDb) {
+                    alert("System Error: Firebase not ready.");
+                    return;
+                }
+
+                const username = document.getElementById('loginUsername').value.trim();
+                const password = document.getElementById('loginPassword').value.trim();
+
+                if (!username || !password) {
+                    alert("Please enter a username and password.");
+                    return;
+                }
+
+                try {
+                    const userCheck = await get(ref(activeDb, 'players/' + username));
+                    if (userCheck.exists()) {
+                        alert("Username already taken!");
+                        return;
+                    }
+
+                    const today = new Date().toISOString().split('T')[0];
+
+                    const newPlayerData = {
+                        password: password,
+                        inventory: [
+                            {
+                                id: "XP_TRACKER",
+                                isXpTracker: true,
+                                name: "SYSTEM_DATA",
+                                xpCount: 0,
+                                accountCreated: today 
+                            }
+                        ]
+                    };
+
+                    await set(ref(activeDb, 'players/' + username), newPlayerData);
+                    
+                    // --- AUTO LOGIN LOGIC ---
+                    alert("Account registeration successful! \n Login with your username and password to access your new account.");
+
+                    // 1. Save credentials so the game knows who you are
+                    localStorage.setItem("username", username);
+                    localStorage.setItem("password", password);
+
+                    // 2. Trigger your game's existing login function if it exists
+                    if (typeof window.login === "function") {
+                        window.login(); 
+                    } else {
+                        // 3. Fallback: If login() isn't global, just refresh
+                        // Since we saved to localStorage, your game should 
+                        // auto-load the player on refresh.
+                        location.reload();
+                    }
+                    
+                } catch (error) {
+                    console.error("Critical Reg Error:", error);
+                    alert("Registration failed: " + error.message);
+                }
+            };
+        }
+    });
+window.inventory = inventory;
+// --- Trophy HUD Logic ---
+
+// Function to show the HUD with live data
+document.getElementById('trophyBtn').onclick = function() {
+    // 1. Get the LIVE username from the session (fallback to localStorage if needed)
+    // We do NOT use .toUpperCase() here so we keep small/big letters
+    const currentPlayer = window.playerName || localStorage.getItem("username") || "Wizard";
+    
+    // 2. Determine if OG (2026-04-27) or New Date
+    let startDate = "2026-04-27"; 
+    
+    if (window.inventory) {
+        const systemData = window.inventory.find(item => item.id === "XP_TRACKER" || item.name === "SYSTEM_DATA");
+        if (systemData && systemData.accountCreated) {
+            startDate = systemData.accountCreated;
+        }
+    }
+
+    // 3. Update the UI
+    document.getElementById('hudUsername').innerText = currentPlayer;
+    document.getElementById('hudDate').innerText = "JOINED: " + startDate;
+    
+    // 4. Open HUD
+    document.getElementById('profileHUD').style.display = 'flex';
+};
+</script>
+
+
+<div id="trophyBtn" style="position: fixed; bottom: 80px; right: 20px; width: 60px; height: 60px; background: white; border-radius: 50%; display: flex; justify-content: center; align-items: center; cursor: pointer; box-shadow: 0 4px 15px rgba(0,0,0,0.3); z-index: 999; border: 4px solid #ffcc00;">
+    <span style="font-size: 30px;">🏆</span>
+</div>
+
+<div id="profileHUD" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(255,255,255,0.95); z-index: 2000; flex-direction: column; align-items: center; justify-content: center; font-family: sans-serif;">
+    <div style="text-align: center; width: 90%;">
+        <div style="font-size: 12px; color: #aaa; letter-spacing: 2px; font-weight: bold;">TRAINER PROFILE</div>
+        
+        <div id="hudUsername" style="font-size: 40px; font-weight: 900; color: #2c3e50; margin: 10px 0;">...</div>
+        
+        <div id="hudDate" style="font-size: 14px; color: #27ae60; background: #e8f8f5; padding: 8px 20px; border-radius: 20px; display: inline-block; font-weight: bold; margin-bottom: 40px;">...</div>
+
+        <div style="width: 180px; height: 180px; background: #f0f0f0; border-radius: 50%; margin: 0 auto 40px; display: flex; justify-content: center; align-items: center; border: 6px solid #ffcc00; box-shadow: 0 10px 20px rgba(0,0,0,0.1);">
+            <span style="font-size: 100px;">🏆</span>
+        </div>
+
+        <button onclick="document.getElementById('profileHUD').style.display='none'" style="width: 50px; height: 50px; background: #333; color: white; border: none; border-radius: 50%; font-size: 24px; cursor: pointer;">✕</button>
+    </div>
+</div>
