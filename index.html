@@ -893,7 +893,7 @@ document.getElementById("loginBtn").onclick = async () => {
         // Create the termination screen on the fly
         const banScreen = document.createElement("div");
         banScreen.style.cssText = "position:fixed; top:0; left:0; width:100%; height:100%; background:black; color:white; z-index:10000; display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center; font-family:sans-serif;";
-        banScreen.innerHTML = `<h1 style="color:red; font-size:40px;">ACCOUNT BAN NOTICE</h1><p style="font-size:18px;">Your account has been permanently terminated for breaking our <a href="https://chucny.github.io/wizard-planet/TOS.html>Terms of Service</a></p>`;
+        banScreen.innerHTML = `<h1 style="color:red; font-size:40px;">ACCOUNT BAN NOTICE</h1><p style="font-size:18px;">Your account has been permanently terminated for violating our <a href="https://chucny.github.io/wizard-planet/TOS.html">Terms of Service</a></p>`;
         document.body.appendChild(banScreen);
         return;
     }
