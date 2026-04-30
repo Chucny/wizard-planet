@@ -2206,8 +2206,8 @@ window.addStep = function() {
     // 2. Cooldown Logic: Get current time
     let now = Date.now();
     
-    // 3. If less than 1000ms has passed, stop here
-    if (now - lastStepTime < 1000) return; 
+    // 3. If less than 500ms has passed, stop here
+    if (now - lastStepTime < 500) return; 
 
     // 4. Continue with existing logic
     if (isHatched) return;
