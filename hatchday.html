@@ -1,17 +1,30 @@
 <!DOCTYPE html>
 <html lang="en">
+<script>
+function checkEventRedirect(year, month, day, startH, endH, targetFile, redirectIfActive) {
+    var now = new Date();
+    // month - 1 because JS Date months are 0-11 (Jan is 0)
+    var isDate = (now.getFullYear() === year && now.getMonth() === (month - 1) && now.getDate() === day);
+    
+    var isTime = true;
+    if (startH !== null && endH !== null) {
+        var hr = now.getHours();
+        isTime = (hr >= startH && hr < endH);
+    }
+
+    var active = isDate && isTime;
+
+    // Logic: If (it is event AND we want to go there) OR (it is NOT event AND we want to leave)
+    if (active === redirectIfActive) {
+        window.location.href = targetFile;
+    }
+}
+
+checkEventRedirect(2026, 5, 3, 0, 23, "index.html", false);
+</script>
 <head>
 
-<script>
-let CURRENT_RAID_SHAPE_SIDES = 3; 
-let BOSS_HP_VAR = 2000;
-
-
-// anticheat stuff
-
-const ALLOW_COMPUTER = true; // Set to false to block PC/Laptop logins
-const BANNED_PLAYERS = ["william"]; // Add usernames to ban here
-</script>
+<script src="somevars.js"></script>
 
 
 
@@ -2195,7 +2208,7 @@ document.getElementById('trophyBtn').onclick = function() {
     <div onclick="document.getElementById('hatchOverlay').style.display='none'" style="position:absolute; top:20px; right:20px; font-size:30px; cursor:pointer; color:#ccc;">✕</div>
     <h1 id="hatchTitle" style="margin:0;">EGG INCUBATOR</h1>
     <div id="eggGraphic" style="font-size:120px; margin:40px 0; transition: transform 0.1s;">🥚</div>
-    <div id="stepCounter" style="font-size:24px; font-weight:bold; color:#333;">0 / 200 STEPS</div>
+    <div id="stepCounter" style="font-size:24px; font-weight:bold; color:#333;">0 / 100 STEPS</div>
     <div style="width:200px; height:10px; background:#eee; border-radius:5px; margin-top:10px;">
         <div id="eggProgress" style="width:0%; height:100%; background:#2ecc71; border-radius:5px; transition: width 0.3s;"></div>
     </div>
@@ -2205,24 +2218,51 @@ document.getElementById('trophyBtn').onclick = function() {
 <script>
 (function() {
     window.eggSteps = 0; // Global so console can see it
-    const GOAL = 200;
+    const GOAL = 100;
     let isHatched = false;
 
-    window.addStep = function() {
-        if (isHatched) return;
-        window.eggSteps++;
-        
-        // Update UI if open
-        const disp = document.getElementById('stepCounter');
-        const bar = document.getElementById('eggProgress');
-        if (disp) disp.innerText = window.eggSteps + " / " + GOAL + " STEPS";
-        if (bar) bar.style.width = (window.eggSteps / GOAL * 100) + "%";
-        
-        // Visual shake
-        document.getElementById('eggGraphic').style.transform = `rotate(${Math.random()*20-10}deg)`;
+    // 1. Initialize the timer outside the function
+let lastStepTime = 0;
 
-        if (window.eggSteps >= GOAL) triggerHatch();
-    };
+window.addStep = function() {
+    // 2. Cooldown Logic: Get current time
+    let now = Date.now();
+    
+    // 3. If less than 500ms has passed, stop here
+    if (now - lastStepTime < 500) return; 
+
+    // 4. Continue with existing logic
+    if (isHatched) return;
+    
+    // Set the goal (change this to 100 if it's Hatch Day!)
+    
+    
+    window.eggSteps++;
+    lastStepTime = now; // Update the timer to right now
+
+    // Update UI
+    const disp = document.getElementById('stepCounter');
+    const bar = document.getElementById('eggProgress');
+    if (disp) disp.innerText = window.eggSteps + " / " + GOAL + " STEPS";
+    if (bar) bar.style.width = Math.min((window.eggSteps / GOAL * 100), 100) + "%";
+    
+    // Visual shake
+    const egg = document.getElementById('eggGraphic');
+    if (egg) egg.style.transform = `rotate(${Math.random() * 20 - 10}deg)`;
+
+    // Hatch Trigger
+    if (window.eggSteps >= GOAL) {
+        if (typeof triggerHatch === "function") {
+            triggerHatch();
+        } else {
+            // Fallback if triggerHatch isn't a defined function yet
+            isHatched = true;
+            document.getElementById('eggGraphic').innerText = "✨🥚✨";
+            document.getElementById('hatchTitle').innerText = "READY TO HATCH!";
+            document.getElementById('claimBtn').style.display = 'block';
+        }
+    }
+};
 
     function triggerHatch() {
         isHatched = true;
@@ -2234,7 +2274,7 @@ document.getElementById('trophyBtn').onclick = function() {
     
 document.getElementById('claimBtn').onclick = function() {
     // 1. Determine if Shiny (1/7 chance as requested)
-    const isShiny = Math.random() < 0.15;
+    const isShiny = Math.random() < 0.30;
     
     // 2. Generate Random IVs (Exactly like wild wizards)
     const ivAtk = Math.floor(Math.random() * 11);
@@ -2261,13 +2301,26 @@ document.getElementById('claimBtn').onclick = function() {
     
     alert(isShiny ? "You hatched a SHINY!" : "Hatched a new Hatchling!");
 
-    // 5. Reset UI
-    window.eggSteps = 0;
-    document.getElementById('hatchOverlay').style.display = 'none';
-    document.getElementById('claimBtn').style.display = 'none';
-    document.getElementById('eggGraphic').innerText = "🥚";
-    document.getElementById('hatchTitle').innerText = "EGG INCUBATOR";
-    
+    //refresh
+
+window.eggSteps = 0; // Reset steps to 0
+
+isHatched = false; // Allow steps to be added again
+
+
+// Reset UI Elements
+
+document.getElementById('hatchOverlay').style.display = 'none';
+
+document.getElementById('claimBtn').style.display = 'none';
+
+document.getElementById('eggGraphic').innerText = "🥚";
+
+document.getElementById('hatchTitle').innerText = "EGG INCUBATOR";
+
+document.getElementById('eggProgress').style.width = "0%";
+
+document.getElementById('stepCounter').innerText = "0 / 100 STEPS";    
     // 6. Refresh Inventory UI
     if (typeof openInventory === "function") openInventory();
 };
@@ -2284,3 +2337,17 @@ document.getElementById('claimBtn').onclick = function() {
     });
 })();
 </script>
+<script>
+(function(){document.body.insertAdjacentHTML('beforeend',`<div id="eventNoticePopup" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.85);z-index:10005;align-items:center;justify-content:center;font-family:sans-serif;pointer-events:all;"><div style="background:white;width:85%;max-width:400px;border-radius:25px;overflow:hidden;text-align:center;box-shadow:0 10px 30px rgba(0,0,0,0.5);"><div style="background:linear-gradient(135deg,#f39c12,#d35400);padding:40px 20px;color:white;"><h2 style="margin:0;font-size:24px;font-weight:900;letter-spacing:1px;">EGG HATCH DAY!</h2></div><div style="padding:30px;color:#34495e;"><p style="font-size:17px;line-height:1.6;margin-bottom:20px;">On Sunday, it's <b>
+
+Egg Hatch Day!
+
+</b><br>
+
+Shiny rates are increased by 50% and egg distance is decreased by 50%!
+
+</p><div style="background:#fef9e7;padding:15px;border-radius:15px;font-size:14px;color:#7d6608;border:1px solid #f9e79f;font-weight:bold;">
+
+Play <b>Egg Hatch Day</b> now, 2026-05-03, Sunday!
+
+</div></div><button id="closeEventBtn" style="width:80%;padding:15px;border:none;background:#e67e22;color:white;font-weight:900;font-size:18px;cursor:pointer;border-radius:50px;margin-bottom:25px;box-shadow:0 4px 0 #a04000;">LET'S GO!</button></div></div>`);var _ep=document.getElementById("eventNoticePopup"),_eb=document.getElementById("closeEventBtn"),_ls=document.getElementById("loginScreen");_eb.onclick=()=>_ep.style.display="none";var _evObs=new MutationObserver((m,o)=>{if(window.getComputedStyle(_ls).display==="none"){setTimeout(()=>{_ep.style.display="flex"},600);o.disconnect()}});if(_ls)_evObs.observe(_ls,{attributes:true,attributeFilter:['style']});})();</script>
