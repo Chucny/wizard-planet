@@ -1,5 +1,27 @@
 <!DOCTYPE html>
 <html lang="en">
+<script>
+function checkEventRedirect(year, month, day, startH, endH, targetFile, redirectIfActive) {
+    var now = new Date();
+    // month - 1 because JS Date months are 0-11 (Jan is 0)
+    var isDate = (now.getFullYear() === year && now.getMonth() === (month - 1) && now.getDate() === day);
+    
+    var isTime = true;
+    if (startH !== null && endH !== null) {
+        var hr = now.getHours();
+        isTime = (hr >= startH && hr < endH);
+    }
+
+    var active = isDate && isTime;
+
+    // Logic: If (it is event AND we want to go there) OR (it is NOT event AND we want to leave)
+    if (active === redirectIfActive) {
+        window.location.href = targetFile;
+    }
+}
+
+checkEventRedirect(2026, 5, 2, 0, 23, "hatchday.html", true);
+</script>
 <head>
 
 <script src="somevars.js"></script>
