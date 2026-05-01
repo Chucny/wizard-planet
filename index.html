@@ -2273,8 +2273,8 @@ window.addStep = function() {
 
     
 document.getElementById('claimBtn').onclick = function() {
-    // 1. Determine if Shiny (1/7 chance as requested)
-    const isShiny = Math.random() < 0.15;
+    // 1. Determine if Shiny (1/10 chance as requested)
+    const isShiny = Math.random() < 0.10;
     
     // 2. Generate Random IVs (Exactly like wild wizards)
     const ivAtk = Math.floor(Math.random() * 11);
