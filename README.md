@@ -6,7 +6,7 @@
 ---
 
 ## 🌍 Project Overview
-**Wizard Planet** is a mobile-first web application that turns your physical environment into a multiplayer arena. By combining real-time GPS tracking with Augmented Reality, it creates a unique scavenger hunt experience directly in your browser.
+**Wizard Planet** is a mobile-first web application that turns your physical environment into a digital world. By combining real-time GPS tracking with Augmented Reality, it creates a unique scavenger hunt experience directly in your browser.
 
 ---
 
