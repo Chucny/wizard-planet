@@ -2,7 +2,8 @@
 ### An open-source AR geolocation adventure built for the modern web.
 
 [**Play the Game ➔**](https://chucny.github.io/wizard-planet)<br>
-[**Terms of Service**](https://chucny.github.io/wizard-planet/TOS.html)
+[**Terms of Service**](https://chucny.github.io/wizard-planet/TOS.html)<br><br>
+[*Wizard Planet Support ➔*](https://docs.google.com/forms/d/e/1FAIpQLSeSaaF3p6okgOMAk-b0MBpNDokPcLgQ616hZTuVDeywFQyK0g/viewform?usp=publish-editor)
 ---
 
 ## 🌍 Project Overview
