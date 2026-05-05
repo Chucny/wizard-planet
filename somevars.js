@@ -1,5 +1,5 @@
-let CURRENT_RAID_SHAPE_SIDES = 3; 
-let BOSS_HP_VAR = 2000;
+let CURRENT_RAID_SHAPE_SIDES = 5; 
+let BOSS_HP_VAR = 2100;
 
 
 // anticheat stuff
