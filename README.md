@@ -13,7 +13,7 @@
 ## ⚙️ Core Mechanics
 
 ### 📍 Proximity Spawning
-The game engine detects movement with **2.5m precision**. As you walk, the logic dynamically generates new encounters based on your real-time coordinates.
+The game engine detects movement with **3.5m precision**. As you walk, the logic dynamically generates new encounters based on your real-time coordinates.
 
 ### 📷 Hybrid AR
 Features a dual-mode catch system. You can switch between a stylized 3D background or a **live AR camera feed** with automatic back-camera prioritization.
