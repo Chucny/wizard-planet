@@ -22,7 +22,7 @@ function checkEventRedirect(year, month, day, startH, endH, targetFile, redirect
 
 checkEventRedirect(2026, 5, 3, 0, 23, "hatchday.html", true);
 
-checkEventRedirect(2026, 5, 10, 0, 23, "raidday-2026-05-10.html", true);
+checkEventRedirect(2026, 5, 16, 0, 23, "raidday-2026-05-10.html", true);
 </script>
 <head>
 
@@ -2350,7 +2350,7 @@ document.getElementById('stepCounter').innerText = "0 / 200 STEPS";
 <script>
 (function(){document.body.insertAdjacentHTML('beforeend',`<div id="eventNoticePopup" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.85);z-index:10005;align-items:center;justify-content:center;font-family:sans-serif;pointer-events:all;"><div style="background:white;width:85%;max-width:400px;border-radius:25px;overflow:hidden;text-align:center;box-shadow:0 10px 30px rgba(0,0,0,0.5);"><div style="background:linear-gradient(135deg,#f39c12,#d35400);padding:40px 20px;color:white;"><h2 style="margin:0;font-size:24px;font-weight:900;letter-spacing:1px;">
 
-PENTAGON RAID DAY!
+PENTAGON RAID DAY: RECAP!
 
 </h2></div><div style="padding:30px;color:#34495e;"><p style="font-size:17px;line-height:1.6;margin-bottom:20px;"><b>
 
@@ -2358,10 +2358,10 @@ Pentagon Raid Day!
 
 </b><br>
 
-On 2026-05-10, it is Pentagon Raid Day! Shiny rates will be increased by 50%! Boss HP will be weakened by 50%.
+On 2026-05-16, it is Pentagon Raid Day: recap! Shiny rates will be increased by 50%! Boss HP will be weakened by 50%.
 
 </p><div style="background:#fef9e7;padding:15px;border-radius:15px;font-size:14px;color:#7d6608;border:1px solid #f9e79f;font-weight:bold;">
 
-Join <b>Pentagon Raid Day</b> on 2026-05-10!
+Join <b>Pentagon Raid Day: recap</b> on 2026-05-16!
 
 </div></div><button id="closeEventBtn" style="width:80%;padding:15px;border:none;background:#e67e22;color:white;font-weight:900;font-size:18px;cursor:pointer;border-radius:50px;margin-bottom:25px;box-shadow:0 4px 0 #a04000;">LET'S GO!</button></div></div>`);var _ep=document.getElementById("eventNoticePopup"),_eb=document.getElementById("closeEventBtn"),_ls=document.getElementById("loginScreen");_eb.onclick=()=>_ep.style.display="none";var _evObs=new MutationObserver((m,o)=>{if(window.getComputedStyle(_ls).display==="none"){setTimeout(()=>{_ep.style.display="flex"},600);o.disconnect()}});if(_ls)_evObs.observe(_ls,{attributes:true,attributeFilter:['style']});})();</script>
