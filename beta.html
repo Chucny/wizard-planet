@@ -35,8 +35,49 @@ checkEventRedirect(2026, 5, 16, 0, 23, "raidday-2026-05-10.html", true);
 
     
 <script src="somevars.js"></script>
+<script>
+/**
+ * Redirects the user if the current time falls within a specific window 
+ * AND their IP location matches a specific city target.
+ *
+ * @param {string} startDate        - Format: "YYYY-MM-DD" (e.g., "2026-06-01")
+ * @param {string} startTime        - Format: "HH:MM" (e.g., "00:00")
+ * @param {string} endDate          - Format: "YYYY-MM-DD" (e.g., "2026-06-30")
+ * @param {string} endTime          - Format: "HH:MM" (e.g., "23:59")
+ * @param {string} location         - Single city name string (e.g., "Madrid")
+ * @param {string} fileToRedirectTo - Destination URL/HTML file (e.g., "wizardfest.html")
+ */
+async function locationEventRedirect(startDate, startTime, endDate, endTime, location, fileToRedirectTo) {
+    // 1. Parse dates using local ISO formatting strings
+    const startEvent = new Date(`${startDate}T${startTime}:00`);
+    const endEvent = new Date(`${endDate}T${endTime}:59`);
+    const now = new Date();
 
+    // 2. Timeline Guard Clause: Check if the event window is currently active
+    if (now < startEvent || now > endEvent) {
+        return; 
+    }
 
+    // 3. Location Evaluation: Fetch the user's IP tracking parameters
+    try {
+        const res = await fetch("https://ipapi.co/json/");
+        if (!res.ok) throw new Error("IP Geolocation API failed");
+        const data = await res.json();
+        
+        if (data && data.city) {
+            // Normalize both string inputs to prevent capitalization failures
+            const userCity = data.city.trim().toLowerCase();
+            const targetCity = location.trim().toLowerCase();
+            
+            if (userCity === targetCity) {
+                console.log(`[EVENT ENGINE] Located inside ${data.city} during active event hours! Redirecting...`);
+                window.location.href = fileToRedirectTo;
+            }
+        }
+    } catch (e) {
+        console.error("[EVENT ENGINE ERROR] Geolocation lookup processing failed: ", e);
+    }
+}</script>
 
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
