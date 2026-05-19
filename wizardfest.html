@@ -1,0 +1,2991 @@
+<!DOCTYPE html>
+<html lang="en">
+<script>
+function checkEventRedirect(year, month, day, startH, endH, targetFile, redirectIfActive) {
+    var now = new Date();
+    // month - 1 because JS Date months are 0-11 (Jan is 0)
+    var isDate = (now.getFullYear() === year && now.getMonth() === (month - 1) && now.getDate() === day);
+    
+    var isTime = true;
+    if (startH !== null && endH !== null) {
+        var hr = now.getHours();
+        isTime = (hr >= startH && hr < endH);
+    }
+
+    var active = isDate && isTime;
+
+    // Logic: If (it is event AND we want to go there) OR (it is NOT event AND we want to leave)
+    if (active === redirectIfActive) {
+        window.location.href = targetFile;
+    }
+}
+
+// OLD EVENTS
+checkEventRedirect(2026, 5, 3, 0, 23, "hatchday.html", true);
+checkEventRedirect(2026, 5, 16, 0, 23, "raidday-2026-05-10.html", true);
+
+
+
+
+
+// FOR GO FEST IN PERSON
+async function locationEventRedirect(startDate, startTime, endDate, endTime, location, fileToRedirectTo) {
+    // 1. Time evaluation check
+    const startEvent = new Date(`${startDate}T${startTime}:00`);
+    const endEvent = new Date(`${endDate}T${endTime}:59`);
+    const now = new Date();
+
+    // Guard clause: Exit instantly if the current time isn't inside the event schedule
+    if (now < startEvent || now > endEvent) {
+        return; 
+    }
+
+    // 2. High-Precision Global IP Geolocation Check
+    try {
+        const res = await fetch("https://ipapi.co/json/");
+        if (!res.ok) throw new Error("Global IP Geolocation API failed");
+        const data = await res.json();
+        
+        if (data && data.city) {
+            // Global formatting: Trim whitespace, convert to lowercase, and replace special characters/spaces with a hyphen
+            // Example: "New York" becomes "new-york", "Madrid " becomes "madrid"
+            const userCity = data.city.trim().toLowerCase().replace(/[^a-zA-Z0-9]/g, "-").replace(/-+/g, "-");
+            const targetCity = location.trim().toLowerCase().replace(/[^a-zA-Z0-9]/g, "-").replace(/-+/g, "-");
+            
+            if (userCity === targetCity) {
+                console.log(`[GLOBAL EVENT ENGINE] Redirecting player found in active zone: ${data.city}`);
+                window.location.href = fileToRedirectTo;
+            }
+        }
+    } catch (e) {
+        console.error("[GLOBAL EVENT ENGINE ERROR] Geolocation lookup failed: ", e);
+    }
+}
+
+
+
+// EVENT ENFORCER: REDIRECT TO INDEX IF CONDITIONS ARE NOT MET
+async function enforceWizardFestAccess() {
+    const startEvent = new Date("2026-06-01T00:00:00");
+    const endEvent = new Date("2026-06-30T23:59:59");
+    const now = new Date();
+
+    // EHTO 1: Jos nykyinen aika on kesäkuun ULKOPUOLELLA, ohjataan heti pois
+    if (now < startEvent || now > endEvent) {
+        console.log("[EVENT ENFORCER] Outside event dates. Redirecting to index.");
+        window.location.href = "index.html";
+        return; 
+    }
+
+    // EHTO 2: Sijainnin tarkistus IP-osoitteen perusteella
+    try {
+        const res = await fetch("https://ipapi.co");
+        if (!res.ok) throw new Error("Global IP Geolocation API failed");
+        const data = await res.json();
+        
+        if (data) {
+            const userCountry = data.country_code ? data.country_code.toUpperCase() : "";
+            const userCity = data.city ? data.city.trim().toLowerCase().replace(/[^a-zA-Z0-9]/g, "-").replace(/-+/g, "-") : "";
+
+            const allowedCountries = ["JP", "SE", "ES", "FI"];
+            const targetCity = "new-york";
+
+            // Tarkistetaan täyttyykö mikään paikkaehdoista
+            const isCountryAllowed = allowedCountries.includes(userCountry);
+            const isCityAllowed = (userCity === targetCity);
+
+            // Jos pelaaja EI ole sallitussa maassa EIKÄ sallitussa kaupungissa
+            if (!isCountryAllowed && !isCityAllowed) {
+                console.log(`[EVENT ENFORCER] Unauthorised zone: ${data.city || userCountry}. Access denied.`);
+                window.location.href = "index.html";
+            } else {
+                console.log("[EVENT ENFORCER] Access granted. Welcome to Wizard Fest!");
+            }
+        } else {
+            // Varmuuden vuoksi, jos data on tyhjää
+            window.location.href = "index.html";
+        }
+    } catch (e) {
+        console.error("[EVENT ENFORCER ERROR] Geolocation failed, blocking access for safety: ", e);
+        // Jos API on alhaalla tai estetty, ohjataan varmuuden vuoksi pois, ettei suojausta ohiteta
+        window.location.href = "index.html";
+    }
+}
+
+// Käynnistetään suojauksen tarkistus heti sivun latautuessa
+enforceWizardFestAccess();
+
+    
+</script>
+<head>
+
+<meta name="google-site-verification" content="IaeaYpHPJUVd4wHdoGUSfXvCyNiqMRdoqDgOAnrGsjQ" />
+
+    <link rel="canonical" href="https://github.io" />
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<!-- Tämä kertoo Googlelle, että kyseessä on Web-sovellus -->
+
+    
+<script>
+let CURRENT_RAID_SHAPE_SIDES = 4; 
+let BOSS_HP_VAR = 2100;
+
+
+// anticheat stuff
+
+const ALLOW_COMPUTER = true; // Set to false to block PC/Laptop logins
+const BANNED_PLAYERS = []; // Add usernames to ban here
+
+
+
+
+</script>
+
+
+
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Wizard Planet</title>
+<link rel="manifest" href="manifest.json">
+<style>
+/* --- General --- */
+html, body { margin:0; padding:0; width:100%; height:100%; overflow:hidden; font-family:sans-serif; background-color:lightblue; }
+/* --- Map --- */
+#map { position:relative; width:100%; height:100%; overflow:hidden; }
+/* --- Player --- */
+#player { position:absolute; width:20px; height:20px; background:red; border-radius:50%; transform:translate(-50%,-50%); z-index:10; }
+/* --- Wizard Balls --- */
+.red-ball { position:absolute; width:50px; height:50px; border-radius:50%; cursor:pointer; display:flex; justify-content:center; align-items:center; flex-direction:column; z-index:15; }
+.red-ball .eye { position:absolute; width:8px; height:8px; background:white; border-radius:50%; top:15px; }
+.red-ball .eye.left { left:12px; }
+.red-ball .eye.right { right:12px; }
+.red-ball .hat { position:absolute; width:20px; height:20px; background:white; border-radius:50%; top:-10px; left:50%; transform:translateX(-50%); border:2px solid black; }
+/* --- Fireball --- */
+.fireball { position:absolute; width:20px; height:20px; background:orange; border-radius:50%; z-index:20; pointer-events:none; }
+/* --- Map tiles --- */
+.tile { position:absolute; width:256px; height:256px; z-index:0; }
+/* --- Inventory Panel --- */
+#inventoryPanel { position:fixed; bottom:0; left:0; width:100%; max-height:50%; background:rgba(175,228,222,0.95); color:black; overflow-x:auto; overflow-y:hidden; padding:10px; display:flex; flex-wrap:nowrap; align-items:flex-start; gap:10px; z-index:100; box-shadow:0 -5px 15px rgba(0,0,0,0.5); display:none; }
+/* --- Wizard card --- */
+.wizard-card { border:1px solid #444; padding:5px; background:lightblue; width:120px; text-align:center; border-radius:8px; flex:0 0 auto; }
+.wizard-name { font-weight:bold; margin-bottom:5px; }
+.wizard-color { width:30px; height:30px; border-radius:50%; margin:5px auto; }
+.wizard-stars { margin:5px 0; }
+.wizard-stats div { font-size:12px; margin:2px 0; }
+.stat-bar { display:inline-block; height:6px; background:limegreen; margin-left:5px; border-radius:3px; }
+/* --- Inventory Button --- */
+#inventoryButton { position:fixed; bottom:10px; right:10px; z-index:150; width:50px; height:50px; border:none; background:#ff8800; color:white; font-weight:bold; border-radius:50%; cursor:pointer; font-size:20px; }
+/* --- Save Button --- */
+#savebutton { position:fixed; bottom:10px; left:10px; z-index:150; }
+/* --- Raid UI --- */
+#raidUI { position:fixed; top:10px; right:10px; z-index:300; display:flex; flex-direction:column; gap:5px; }
+/* --- RAID BATTLE SCREEN --- */
+#raidBattleScreen { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background-image:ur[](https://wallup.net/wp-content/uploads/2016/05/02/274452-architecture-nature-trees-Sun-pillar-stone-Colosseum-Rome-Italy-capital-stairs-sunlight-path-field-grass-arena-arch-building-monuments.jpg); z-index:500; flex-direction:column; align-items:center; justify-content:flex-start; padding-top:50px; }
+#raidTimer { width:60px; height:60px; border-radius:50%; background:orange; color:white; display:flex; align-items:center; justify-content:center; font-size:20px; font-weight:bold; margin-bottom:20px; }
+#raidBossName { color:white; font-size:24px; font-weight:bold; margin-bottom:10px; }
+#raidBossHPContainer { width:80%; height:20px; background:#333; border-radius:10px; margin-bottom:20px; }
+#raidBossHP { height:100%; width:100%; background:red; border-radius:10px; }
+#raidBossCircle { width:120px; height:120px; border-radius:50%; margin-bottom:40px; }
+#raidPlayerWizard { width:60px; height:60px; border-radius:50%; background:yellow; position:relative; }
+@keyframes wizardAttack {
+    0% { transform: translate(0, 0) scale(1); }
+    50% { transform: translate(0, -30px) scale(1.1); } /* Jump up and get slightly bigger */
+    100% { transform: translate(0, 0) scale(1); }
+}
+
+.attacking {
+    animation: wizardAttack 0.4s ease-out;
+}
+#inventoryPanel {
+    flex-direction: column; /* Stack search bar on top of cards */
+    align-items: stretch;
+}
+/* --- Modern Raid Buttons --- */
+#raidUI {
+    top: 20px;
+    right: 20px;
+}
+
+#raidUI button {
+    background: linear-gradient(180deg, #4facfe 0%, #00f2fe 100%);
+    color: white;
+    border: 3px solid white;
+    border-radius: 50px;
+    padding: 12px 24px;
+    font-weight: 900;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+    transition: transform 0.1s, filter 0.2s;
+    cursor: pointer;
+    margin-bottom: 8px;
+}
+
+#raidUI button:active { transform: scale(0.95); }
+#raidUI button:hover { filter: brightness(1.1); }
+
+/* --- Hidden Settings & Delete Button --- */
+#settingsBtn {
+    position: fixed;
+    top: 20px;
+    left: 20px;
+    z-index: 1000;
+    font-size: 24px;
+    background: rgba(255,255,255,0.8);
+    border: 2px solid #ccc;
+    border-radius: 50%;
+    width: 45px;
+    height: 45px;
+    cursor: pointer;
+}
+
+#settingsMenu {
+    display: none;
+    position: fixed;
+    top: 75px;
+    left: 20px;
+    background: white;
+    padding: 15px;
+    border-radius: 15px;
+    box-shadow: 0 5px 20px rgba(0,0,0,0.3);
+    z-index: 1000;
+}
+
+.danger-zone-btn {
+    background: #ff4757 !important;
+    color: white !important;
+    border: none;
+    padding: 8px 12px;
+    border-radius: 5px;
+    font-size: 11px;
+    cursor: pointer;
+    font-weight: bold;
+}
+
+/* --- Delete Wizard Button (Inside Inventory) --- */
+.release-btn {
+    margin-top: 10px;
+    background: #eee;
+    border: 1px solid #ccc;
+    color: #777;
+    border-radius: 20px;
+    padding: 4px 10px;
+    font-size: 10px;
+    cursor: pointer;
+}
+.release-btn:hover { background: #ffebee; color: #f44336; }
+</style>
+</head>
+<body>
+<!-- Map and player -->
+<div id="map">
+    <div id="player"></div>
+</div>
+
+<!-- Inventory panel -->
+<div id="inventoryPanel"></div>
+<button id="inventoryButton">🎒</button>
+
+
+
+<!-- Raid UI -->
+
+
+<!-- RAID BATTLE SCREEN -->
+<div id="raidBattleScreen">
+    <div id="raidTimer">300</div>
+    <div id="raidBossName">Boss</div>
+    <div id="raidBossHPContainer"><div id="raidBossHP"></div></div>
+    <div id="raidBossCircle"></div>
+    <div id="raidPlayerWizard">
+        <div class="eye" style="position:absolute; width:8px; height:8px; background:white; border-radius:50%; top:15px; left:10px;"></div>
+        <div class="eye" style="position:absolute; width:8px; height:8px; background:white; border-radius:50%; top:15px; right:10px;"></div>
+        <div class="hat" style="position:absolute; width:20px; height:20px; background:white; border-radius:50%; top:-10px; left:50%; transform:translateX(-50%); border:2px solid black;"></div>
+    </div>
+</div>
+
+<!-- CATCH SCREEN -->
+<div id="catchScreen" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background-image:ur[](https://images2.alphacoders.com/117/11762.jpg); z-index:700; overflow:hidden;">
+    <div id="catchWizardBall" style="position:absolute; top:30%; left:50%; width:100px; height:100px; border-radius:50%; transform:translateX(-50%);"></div>
+    <div id="throwBall" style="position:absolute; bottom:80px; left:50%; width:60px; height:60px; background:orange; border-radius:50%; transform:translateX(-50%); cursor:pointer;"></div>
+    <button onclick="closeCatchScreen()" style="position:absolute; top:20px; right:20px; z-index:710;">X</button>
+</div>
+
+<script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
+
+
+<div id="raidUIContainer" style="position: fixed; top: 20px; right: 20px; z-index: 300; display: flex; flex-direction: column; align-items: flex-end;">
+    <button id="raidMenuBtn" style="width: 50px; height: 50px; border-radius: 50%; background: linear-gradient(135deg, #ff4757, #ff6b81); border: 3px solid white; color: white; font-size: 24px; cursor: pointer; box-shadow: 0 4px 10px rgba(0,0,0,0.3);">⚔️</button>
+    
+    <div id="raidMenuContent" style="display: none; margin-top: 10px; flex-direction: column; gap: 8px;">
+        <button onclick="createRaid()" style="background: #4facfe; color: white; border: 2px solid white; border-radius: 20px; padding: 10px 20px; font-weight: bold; cursor: pointer; white-space: nowrap;">Create Raid</button>
+        <button onclick="joinRaid()" style="background: #00f2fe; color: white; border: 2px solid white; border-radius: 20px; padding: 10px 20px; font-weight: bold; cursor: pointer; white-space: nowrap;">Join Raid</button>
+    </div>
+</div>    
+   
+<script>
+// ====================== CORE GAME ======================
+const TILE_SIZE = 256;
+let zoom = 15;
+let map = document.getElementById('map');
+let player = document.getElementById('player');
+let mapTiles = [];
+let fireballs = 30;
+let wizardIdCounter = 1;
+const wizards = {};
+const spawnedBalls = new Set();
+let inventory = [];
+
+// ====================== MAP ======================
+function latLngToTile(lat,lng,zoom) {
+    const n = Math.pow(2, zoom);
+    let x = Math.floor((lng + 180)/360 * n);
+    let y = Math.floor((1 - Math.log(Math.tan(lat*Math.PI/180)+1/Math.cos(lat*Math.PI/180))/Math.PI)/2*n);
+    x = Math.max(0, Math.min(x,n-1));
+    y = Math.max(0, Math.min(y,n-1));
+    return {x,y};
+}
+function drawMap(lat,lng) {
+    mapTiles.forEach(t=>t.remove()); mapTiles=[];
+    const cols = Math.ceil(window.innerWidth / TILE_SIZE)+2;
+    const rows = Math.ceil(window.innerHeight / TILE_SIZE)+2;
+    const centerTile = latLngToTile(lat,lng,zoom);
+    for (let dx=-Math.floor(cols/2); dx<=Math.floor(cols/2); dx++){
+        for (let dy=-Math.floor(rows/2); dy<=Math.floor(rows/2); dy++){
+            const tileX = centerTile.x+dx;
+            const tileY = centerTile.y+dy;
+            const img = document.createElement('img');
+            img.src = `https://tile.openstreetmap.org/${zoom}/${tileX}/${tileY}.png`;
+            img.className='tile';
+            img.style.left=`${(dx+Math.floor(cols/2))*TILE_SIZE}px`;
+            img.style.top=`${(dy+Math.floor(rows/2))*TILE_SIZE}px`;
+            map.appendChild(img);
+            mapTiles.push(img);
+        }
+    }
+    player.style.left = window.innerWidth/2+"px";
+    player.style.top = window.innerHeight/2+"px";
+}
+async function updateMapWithCurrentLocation() {
+    if (navigator.geolocation) {
+        // We define the options here
+        const options = {
+            enableHighAccuracy: true, // Forces the GPS hardware on
+            timeout: 10000,           // Increased to 10 seconds
+            maximumAge: 0             // Forces a fresh location, not a cached one
+        };
+
+        navigator.geolocation.getCurrentPosition(
+            (pos) => {
+                // SUCCESS: We got a real GPS lock
+                console.log("GPS Lock Acquired");
+                drawMap(pos.coords.latitude, pos.coords.longitude);
+            }, 
+            async (error) => {
+                // FAIL: Only use IP location if GPS fails or times out
+                console.log("GPS failed or timed out. Falling back to IP...");
+                try {
+                    const res = await fetch("https://api.codetabs.com/v1/geolocation/json");
+                    const data = await res.json();
+                    drawMap(data.latitude, data.longitude);
+                } catch (e) {
+                    console.error("Total location failure:", e);
+                }
+            }, 
+            options
+        );
+    }
+}
+updateMapWithCurrentLocation();
+setInterval(updateMapWithCurrentLocation,15000);
+
+// ====================== WIZARDS & INVENTORY ======================
+function getRandomColor(){ return ['red','green','blue','purple','yellow','gold'][Math.floor(Math.random()*6)]; }
+function spawnWizardBall(x,y,wizardData=null){
+    if(!wizardData){
+        wizardData = {id: wizardIdCounter++, iv:`${Math.floor(Math.random()*11)}/${Math.floor(Math.random()*11)}/${Math.floor(Math.random()*11)}`, color:getRandomColor(), name:'Wizard '+wizardIdCounter, shape:'circle'};
+    }
+    wizards[wizardData.id] = wizardData;
+    const ball=document.createElement('div');
+    ball.className='red-ball';
+    ball.style.left=x+'px'; ball.style.top=y+'px';
+    ball.style.background=wizardData.color;
+    ball.innerHTML = `<div class="eye left"></div><div class="eye right"></div><div class="hat"></div>`;
+    ball.addEventListener('click',()=>{catchWizard(ball,wizardData)});
+    map.appendChild(ball);
+    spawnedBalls.add(ball);
+}
+function despawnWizardBall(ball,wizardData){
+    if(spawnedBalls.has(ball)){ ball.remove(); spawnedBalls.delete(ball); delete wizards[wizardData.id]; }
+}
+function addToInventory(wizardData){ inventory.push(wizardData); }
+
+// Inventory UI
+const inventoryPanel=document.getElementById("inventoryPanel");
+const inventoryButton=document.getElementById("inventoryButton");
+function createWizardCard(wizardData){
+    const card=document.createElement("div"); card.className="wizard-card";
+    const nameDiv=document.createElement("div"); nameDiv.className="wizard-name"; nameDiv.textContent=wizardData.name;
+    const colorDiv=document.createElement("div"); colorDiv.className="wizard-color"; 
+    colorDiv.style.background=wizardData.color;
+    if(wizardData.shape==="octagon"){
+        colorDiv.style.clipPath="polygon(30% 0%,70% 0%,100% 30%,100% 70%,70% 100%,30% 100%,0% 70%,0% 30%)";
+        colorDiv.style.borderRadius="0";
+    }
+    const ivParts=wizardData.iv.split("/").map(n=>parseInt(n));
+    const totalIV=ivParts.reduce((a,b)=>a+b,0);
+    const starDiv=document.createElement("div"); starDiv.className="wizard-stars"; starDiv.textContent="⭐".repeat(Math.ceil((totalIV/30)*3));
+    const statsDiv=document.createElement("div"); statsDiv.className="wizard-stats";
+    ["Atk","Def","Spd"].forEach((s,i)=>{ 
+        const statDiv=document.createElement("div"); statDiv.textContent=s+": ";
+        const bar=document.createElement("div"); bar.className="stat-bar"; bar.style.width=(ivParts[i]/10*100)+"%";
+        statDiv.appendChild(bar); statsDiv.appendChild(statDiv);
+    });
+    card.append(nameDiv,colorDiv,starDiv,statsDiv);
+    return card;
+}
+
+function openInventory() {
+    inventoryPanel.innerHTML = "";
+    
+    // 1. Create Search Container
+    const searchContainer = document.createElement("div");
+    searchContainer.style.cssText = "width:100%; padding:10px; position:sticky; top:0; background:rgba(175,228,222,1); z-index:10; display:flex; gap:10px;";
+    
+    const searchInput = document.createElement("input");
+    searchInput.placeholder = "Search wizards by name...";
+    searchInput.style.cssText = "flex:1; padding:8px; border-radius:5px; border:1px solid #444;";
+    
+    searchContainer.appendChild(searchInput);
+    inventoryPanel.appendChild(searchContainer);
+
+    // 2. Create a wrapper for the cards
+    const cardWrapper = document.createElement("div");
+    cardWrapper.style.cssText = "display:flex; flex-wrap:nowrap; gap:10px; padding-bottom:10px;";
+    inventoryPanel.appendChild(cardWrapper);
+
+    // 3. Function to render filtered list
+    const renderWizards = (filter = "") => {
+    cardWrapper.innerHTML = "";
+    const filtered = inventory.filter(w => 
+        w && w.name && w.name.toLowerCase().includes(filter.toLowerCase())
+    );
+    filtered.forEach(w => {
+        const card = createWizardCard(w);
+        // ONLY append if createWizardCard actually returned an element
+        if (card) {
+            cardWrapper.appendChild(card);
+        }
+    });
+};
+    // 4. Initial render and search event
+    renderWizards();
+    searchInput.addEventListener("input", (e) => renderWizards(e.target.value));
+
+    inventoryPanel.style.display = "flex";
+}
+
+function closeInventory(){ inventoryPanel.style.display="none"; }
+inventoryButton.addEventListener("click",()=>{ inventoryPanel.style.display==="none" ? openInventory() : closeInventory(); });
+
+// Save / Load
+function downloadInventory(){
+    const jsonString = JSON.stringify(inventory,null,2);
+    const blob = new Blob([jsonString], { type: "application/json" });
+    const link = document.createElement("a");
+    link.href = URL.createObjectURL(blob);
+    link.download = prompt("Name your save file")+".wizard";
+    link.click();
+}
+function loadInventoryFromFile(){
+    const fileInput = document.getElementById('loadFileInput');
+    fileInput.click();
+    fileInput.onchange = () => {
+        const file = fileInput.files[0];
+        if(!file) return;
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            try {
+                const data = JSON.parse(e.target.result);
+                if(Array.isArray(data)){ inventory = data; alert('Loaded '+inventory.length+' wizards!'); if(inventoryPanel.style.display!=="none") openInventory(); }
+            } catch(err){ alert('Error: '+err.message); }
+        };
+        reader.readAsText(file);
+    };
+}
+
+// Spawn initial + periodic
+
+setInterval(()=>{ fireballs++; },8000);
+
+// ====================== CATCH SCREEN ======================
+
+const catchWizardElem = document.getElementById("catchWizardBall");
+const throwBall = document.getElementById("throwBall");
+let currentCatchWizard = null;
+
+function openCatchScreen(wizardData) {
+    currentCatchWizard = wizardData;
+    catchScreen.style.display = "block";
+    catchWizardElem.style.background = wizardData.color;
+    catchWizardElem.style.clipPath = wizardData.shape==="octagon" ? "polygon(30% 0%,70% 0%,100% 30%,100% 70%,70% 100%,30% 100%,0% 70%,0% 30%)" : "none";
+    catchWizardElem.style.borderRadius = wizardData.shape==="octagon" ? "0" : "50%";
+    throwBall.style.transition = "none";
+    throwBall.style.bottom = "80px";
+}
+function closeCatchScreen(){ catchScreen.style.display="none"; }
+
+throwBall.addEventListener("click", () => {
+    throwBall.style.transition = "all 0.6s ease";
+    throwBall.style.bottom = "55%";
+    setTimeout(() => {
+        const caught = Math.random() < 0.75;
+        if(caught){
+            const name = prompt("Name your wizard:", currentCatchWizard.name) || currentCatchWizard.name;
+            currentCatchWizard.name = name.trim();
+            inventory.push(currentCatchWizard);
+            alert("CAUGHT!\n"+currentCatchWizard.name+"\nIV: "+currentCatchWizard.iv);
+            if(inventoryPanel.style.display!=="none") openInventory();
+            closeCatchScreen();
+        } else {
+            alert("Escaped!");
+            throwBall.style.bottom = "80px";
+        }
+    },700);
+});
+
+function catchWizard(ball, wizardData){
+    if(fireballs>0){
+        fireballs--;
+        openCatchScreen(wizardData);
+        despawnWizardBall(ball,wizardData);
+    } else alert("No fireballs left!");
+}
+
+// ====================== GLOBAL RAID SYSTEM (PUBLIC MQTT - NO API KEY) ======================
+const MQTT_BROKER = "wss://broker.hivemq.com:8884/mqtt";
+let mqttClient = null;
+let raidActive = null;
+let raidHost = false;
+let currentRaidCode = null;
+const MAX_PLAYERS = 20;
+const RAID_TIME = 300;
+const RAID_TOPIC_PREFIX = "wizard-raid/";
+
+function generateRaidCode(){ return Math.random().toString(36).substring(2,8).toUpperCase(); }
+function randomRaidColor(){ return ["red","blue","green","purple","orange","pink","cyan"][Math.floor(Math.random()*7)]; }
+function createRaidBoss(hp=2000){
+    const shiny = Math.random()<0.1;
+    return { name:"Polygon-"+ "ABCDEFGHIJKLMNOPQRSTUVWXYZ"[Math.floor(Math.random()*26)], color:shiny?"gold":randomRaidColor(), shiny, maxHp:hp, hp:hp, shape:"octagon" };
+}
+
+// Connect to public MQTT broker (works worldwide, no key, no signup)
+function connectMQTT(code){
+    if(mqttClient) mqttClient.end();
+    mqttClient = mqtt.connect(MQTT_BROKER, { keepalive: 30 });
+    
+    mqttClient.on('connect', () => {
+        console.log("✅ Connected");
+        mqttClient.subscribe(RAID_TOPIC_PREFIX + code);
+        
+        
+        if(raidHost){
+    mqttClient.publish(RAID_TOPIC_PREFIX + code, JSON.stringify({type:"raidState", raid:raidActive}));
+} else {
+    // Joiner now uses window.playerName instead of prompt
+    mqttClient.publish(RAID_TOPIC_PREFIX + code, JSON.stringify({
+        type:"joinRaid",
+        playerName: window.playerName || "Guest", 
+        wizards: Array.from({length:6},(_,i)=>({name:`Wizard-${i+1}`, damagePerSec:5}))
+    }));
+}
+    });
+
+    mqttClient.on('message', (topic, payload) => {
+        try {
+            const msg = JSON.parse(payload.toString());
+            if(msg.type === "joinRaid" && raidHost && raidActive){
+                if(raidActive.players.length >= MAX_PLAYERS) return;
+                raidActive.players.push({name:msg.playerName, wizards:msg.wizards});
+                mqttClient.publish(RAID_TOPIC_PREFIX + code, JSON.stringify({type:"raidState", raid:raidActive}));
+                alert(msg.playerName + " joined the raid!");
+            }
+            if(msg.type === "raidState"){
+                raidActive = msg.raid;
+                showRaidBattleScreen(raidActive.boss);
+                updateRaidUI();
+            }
+            if(msg.type === "raidEnded"){
+                raidScreen.style.display = "none";
+                if(msg.boss && msg.boss.hp <= 0) collectPolygonFromRaid(msg.boss);
+                raidActive = null;
+                if(mqttClient) mqttClient.end();
+            }
+        } catch(e){}
+    });
+}
+
+// Create / Join
+function createRaid(){
+    raidHost = true;
+    currentRaidCode = generateRaidCode();
+    raidActive = {
+        code: currentRaidCode,
+        boss: createRaidBoss(),
+        // Changed prompt to window.playerName
+        players: [{
+            name: window.playerName || "Host", 
+            wizards: Array.from({length:6},(_,i)=>({name:`Wizard-${i+1}`, damagePerSec:5}))
+        }],
+        timer: RAID_TIME
+    };
+    connectMQTT(currentRaidCode);
+    alert(`🌍 RAID CREATED!\nCode: ${currentRaidCode}\nBoss: ${raidActive.boss.name}`);
+    showRaidBattleScreen(raidActive.boss);
+    startRaidBattleLoop();
+}
+
+function joinRaid(){
+    raidHost = false;
+    const code = prompt("Enter raid code:").toUpperCase().trim();
+    if(!code) return;
+    currentRaidCode = code;
+    connectMQTT(code);
+    showRaidBattleScreen({name:"Waiting for host...", color:"gray"}); // placeholder until state arrives
+}
+
+// Battle loop (only host runs the logic)
+function startRaidBattleLoop(){
+    if(!raidHost || !raidActive) return;
+    showRaidBattleScreen(raidActive.boss);
+    raidActive.intervalId = setInterval(() => {
+        if(!raidActive) return;
+        
+        let totalDPS = 0;
+        raidActive.players.forEach(p => p.wizards.forEach(w => totalDPS += w.damagePerSec));
+        raidActive.boss.hp = Math.max(0, raidActive.boss.hp - totalDPS);
+        raidActive.timer--;
+
+        updateRaidUI();
+
+        // Broadcast full state to everyone
+        if(mqttClient) mqttClient.publish(RAID_TOPIC_PREFIX + currentRaidCode, JSON.stringify({type:"raidState", raid:raidActive}));
+
+        if(raidActive.boss.hp <= 0){
+            clearInterval(raidActive.intervalId);
+            if(mqttClient) mqttClient.publish(RAID_TOPIC_PREFIX + currentRaidCode, JSON.stringify({type:"raidEnded", boss:raidActive.boss}));
+            collectPolygonFromRaid(raidActive.boss);
+            raidScreen.style.display = "none";
+            raidActive = null;
+        } else if(raidActive.timer <= 0){
+            clearInterval(raidActive.intervalId);
+            if(mqttClient) mqttClient.publish(RAID_TOPIC_PREFIX + currentRaidCode, JSON.stringify({type:"raidEnded"}));
+            alert("⏱️ Time's up! Raid failed.");
+            raidScreen.style.display = "none";
+            raidActive = null;
+        }
+    }, 1000);
+}
+
+function updateRaidUI(){
+    raidTimerElem.textContent = raidActive.timer;
+    updateRaidHP(raidActive.boss.hp, raidActive.boss.maxHp);
+}
+
+// RAID SCREEN ELEMENTS
+
+const raidTimerElem = document.getElementById('raidTimer');
+const raidBossNameElem = document.getElementById('raidBossName');
+const raidBossHPElem = document.getElementById('raidBossHP');
+const raidBossCircleElem = document.getElementById('raidBossCircle');
+
+function showRaidBattleScreen(boss){
+    raidScreen.style.display = "flex";
+    raidBossNameElem.textContent = boss.name || "Raid Boss";
+    raidBossCircleElem.style.background = boss.color || "red";
+    if(boss.shape === "octagon"){
+        raidBossCircleElem.style.clipPath = "polygon(30% 0%,70% 0%,100% 30%,100% 70%,70% 100%,30% 100%,0% 70%,0% 30%)";
+        raidBossCircleElem.style.borderRadius = "0";
+    } else {
+        raidBossCircleElem.style.clipPath = "none";
+        raidBossCircleElem.style.borderRadius = "50%";
+    }
+    updateRaidHP(boss.hp || 2000, boss.maxHp || 2000);
+}
+function updateRaidHP(current, max){
+    raidBossHPElem.style.width = (current / max * 100) + "%";
+}
+
+// ====================== COLLECT POLYGON (OCTAGON REWARD) ======================
+function collectPolygonFromRaid(boss){
+    const polygon = {
+        id: "polygon-" + Date.now(),
+        name: boss.name,
+        color: boss.color,
+        iv: [6+Math.floor(Math.random()*5),6+Math.floor(Math.random()*5),6+Math.floor(Math.random()*5)].join("/"),
+        shiny: boss.shiny,
+        shape: "octagon"
+    };
+    openCatchScreen(polygon);
+    if(inventoryPanel.style.display !== "none") openInventory();
+}
+
+// ====================== START GAME ======================
+
+
+
+
+// =============================================================================
+// FIX: Add eyes + hat to catch screen wizard + reliable backgrounds
+// Paste this at the END of your <script> block
+// =============================================================================
+
+// 1. Override openCatchScreen to include eyes & hat
+const originalOpenCatchScreen = openCatchScreen || function(){};
+openCatchScreen = function(wizardData) {
+    originalOpenCatchScreen(wizardData);
+
+    // Make sure wizard has face features (eyes + hat)
+    catchWizardElem.innerHTML = `
+        <div class="eye" style="position:absolute; width:12px; height:12px; background:white; border-radius:50%; top:28px; left:22px; box-shadow:0 0 4px rgba(0,0,0,0.4);"></div>
+        <div class="eye" style="position:absolute; width:12px; height:12px; background:white; border-radius:50%; top:28px; right:22px; box-shadow:0 0 4px rgba(0,0,0,0.4);"></div>
+        <div class="hat" style="position:absolute; width:36px; height:36px; background:#fff; border-radius:50% 50%; top:-18px; left:50%; transform:translateX(-50%); border:3px solid #000; border-bottom:none; box-shadow:0 4px 8px rgba(0,0,0,0.3);"></div>
+`;
+
+    // Make sure shape (circle/octagon) is applied correctly
+    catchWizardElem.style.clipPath = wizardData.shape === "octagon" 
+        ? "polygon(30% 0%, 70% 0%, 100% 30%, 100% 70%, 70% 100%, 30% 100%, 0% 70%, 0% 30%)"
+        : "none";
+    catchWizardElem.style.borderRadius = wizardData.shape === "octagon" ? "0" : "50%";
+};
+
+// 2. Force-apply nice, reliable backgrounds (replace broken hotlinks)
+const raidScreen = document.getElementById('raidBattleScreen');
+const catchScreen = document.getElementById('catchScreen');
+
+if (raidScreen) {
+    raidScreen.style.backgroundImage = "url('https://wallup.net/wp-content/uploads/2016/05/02/274452-architecture-nature-trees-Sun-pillar-stone-Colosseum-Rome-Italy-capital-stairs-sunlight-path-field-grass-arena-arch-building-monuments.jpg')";
+    raidScreen.style.backgroundSize = "cover";
+    raidScreen.style.backgroundPosition = "center";
+    raidScreen.style.backgroundRepeat = "no-repeat";
+}
+
+if (catchScreen) {
+    catchScreen.style.backgroundImage = "url('https://images2.alphacoders.com/117/11762.jpg')";
+    catchScreen.style.backgroundSize = "cover";
+    catchScreen.style.backgroundPosition = "center";
+    catchScreen.style.backgroundRepeat = "no-repeat";
+}
+
+// Optional: Add a subtle overlay so text/buttons are more readable
+const style = document.createElement('style');
+style.textContent = `
+    #raidBattleScreen::before,
+    #catchScreen::before {
+        content: "";
+        position: absolute;
+        inset: 0;
+        background: rgba(0, 0, 0, 0.35);
+        z-index: 1;
+        pointer-events: none;
+    }
+    #raidBattleScreen > *,
+    #catchScreen > * {
+        position: relative;
+        z-index: 2;
+    }
+`;
+document.head.appendChild(style);
+
+
+// Function to make the player wizard bounce
+function animateWizardAttack() {
+    const playerWizard = document.getElementById('raidPlayerWizard');
+    if (!playerWizard) return;
+
+    // Remove class if it exists to reset the animation
+    playerWizard.classList.remove('attacking');
+    
+    // Trigger reflow to allow the animation to restart
+    void playerWizard.offsetWidth; 
+    
+    // Add the class to start the jump
+    playerWizard.classList.add('attacking');
+}
+
+// Hook into the raid loop
+// We can use an interval that checks if the raid screen is visible
+setInterval(() => {
+    const raidScreen = document.getElementById('raidBattleScreen');
+    if (raidScreen && raidScreen.style.display === "flex") {
+        animateWizardAttack();
+    }
+}, 1000); // Bounces every 1 second (matching the DPS tick)
+
+
+let lastPos = null;
+window.getDistance = function(lat1, lon1, lat2, lon2) {
+    const R = 6371e3;
+    const φ1 = lat1 * Math.PI / 180;
+    const φ2 = lat2 * Math.PI / 180;
+    const Δφ = (lat2 - lat1) * Math.PI / 180;
+    const Δλ = (lon2 - lon1) * Math.PI / 180;
+
+    const a = Math.sin(Δφ/2) ** 2 +
+              Math.cos(φ1) * Math.cos(φ2) *
+              Math.sin(Δλ/2) ** 2;
+
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+
+    return R * c;
+};
+if (navigator.geolocation) {
+    navigator.geolocation.watchPosition((pos) => {
+        const currentLat = pos.coords.latitude;
+        const currentLng = pos.coords.longitude;
+
+        if (lastPos) {
+            const distance = getDistance(
+                lastPos.lat, lastPos.lng,
+                currentLat, currentLng
+            );
+
+            console.log("Moved:", distance);
+
+            if (distance >= 3.5) {
+                spawnWizardBall(
+                    Math.random() * (window.innerWidth - 100) + 50,
+                    Math.random() * (window.innerHeight - 100) + 50
+                );
+            }
+        }
+
+        lastPos = { lat: currentLat, lng: currentLng };
+
+    }, (err) => {
+        console.error("GPS error:", err);
+    }, {
+        enableHighAccuracy: true,
+        maximumAge: 0,
+        timeout: 5000
+    });
+}
+
+
+
+
+//===============================================================
+// End of fix snippet
+// =============================================================================
+</script>
+
+<div id="loginScreen" style="position:fixed; top:0; left:0; width:100%; height:100%; background: linear-gradient(180deg, rgba(46, 204, 113, 0.8) 0%, rgba(52, 152, 219, 0.8) 100%); display:flex; align-items:center; justify-content:center; z-index:9999; font-family: sans-serif;">
+  <div style="background: rgba(255, 255, 255, 0.95); padding: 30px; border-radius: 30px; text-align:center; box-shadow: 0 15px 35px rgba(0,0,0,0.3); width: 80%; max-width: 350px;">
+    <div style="font-size: 50px; margin-bottom: 10px;"></div>
+    <h2 style="color: #2c3e50; margin-bottom: 20px; letter-spacing: 1px; font-weight: 800;">WIZARD PLANET</h2>
+    
+    <input id="loginUsername" placeholder="USERNAME" style="width: 100%; padding: 12px; margin-bottom: 10px; border-radius: 10px; border: 1px solid #ddd; outline: none; box-sizing: border-box; text-align: center;"/>
+    <input id="loginPassword" type="password" placeholder="PASSWORD" style="width: 100%; padding: 12px; margin-bottom: 20px; border-radius: 10px; border: 1px solid #ddd; outline: none; box-sizing: border-box; text-align: center;"/>
+    
+    <button id="loginBtn" style="width: 100%; background: #3498db; color: white; border: none; padding: 15px; border-radius: 50px; font-weight: bold; cursor: pointer; margin-bottom: 10px; box-shadow: 0 4px 0 #2980b9;">SIGN IN</button>
+    <button id="registerBtn" style="background: transparent; color: #7f8c8d; border: none; font-size: 12px; cursor: pointer; text-decoration: underline;">CREATE NEW ACCOUNT</button>
+    
+    <p id="loginMsg" style="color:#e74c3c; font-size: 12px; margin-top: 10px; font-weight: bold;"></p>
+  </div>
+</div>
+
+
+
+<script type="module">
+
+    
+import { initializeApp } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-app.js";
+import { getDatabase, ref, set, get, remove } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-database.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyBwc_UlDGweMWbG17rBeytQ1Y2JpYEgrdI",
+  authDomain: "wizard-planet0.firebaseapp.com",
+  projectId: "wizard-planet0",
+  storageBucket: "wizard-planet0.firebasestorage.app",
+  messagingSenderId: "648724841842",
+  appId: "1:648724841842:web:3cbe09a1b9a1b3dc07c9eb",
+  databaseURL: "https://wizard-planet0-default-rtdb.europe-west1.firebasedatabase.app/"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getDatabase(app);
+window.db = db;
+
+// Sync game inventory to window so this module can see it
+window.inventory = inventory;
+
+// ====================== CORE FUNCTIONS ======================
+
+async function saveToFirebase() {
+  if (!window.playerName || !window.playerPassword) return;
+  try {
+    await set(ref(db, "players/" + window.playerName), {
+      password: window.playerPassword,
+      inventory: window.inventory || []
+    });
+    console.log("✅ Progress Saved");
+  } catch (err) {
+    console.error("Save error:", err);
+  }
+}
+
+async function loadWizards(username) {
+  try {
+    const snapshot = await get(ref(db, "players/" + username));
+    const data = snapshot.val();
+    if (data && Array.isArray(data.inventory)) {
+      inventory.length = 0;
+      data.inventory.forEach(w => inventory.push(w));
+      window.inventory = inventory; 
+      if (inventoryPanel.style.display !== "none") openInventory();
+    }
+  } catch (err) {
+    console.error("Load error:", err);
+  }
+}
+
+// ====================== UI & EVENT LISTENERS ======================
+
+// Login Logic
+document.getElementById("loginBtn").onclick = async () => {
+  const username = document.getElementById("loginUsername").value.trim();
+  const password = document.getElementById("loginPassword").value.trim();
+  const msg = document.getElementById("loginMsg");
+  
+  if (!username || !password) return msg.textContent = "Missing info";
+  
+  const snapshot = await get(ref(db, "players/" + username));
+  const data = snapshot.val();
+  
+  if (!data) return msg.textContent = "User not found";
+  if (data.password !== password) return msg.textContent = "Wrong password";
+  
+  window.playerName = username;
+  window.playerPassword = password;
+  
+  await loadWizards(username);
+  document.getElementById("loginScreen").style.display = "none";
+};
+
+// Register Logic
+document.getElementById("registerBtn").onclick = async () => {
+  const username = document.getElementById("loginUsername").value.trim();
+  const password = document.getElementById("loginPassword").value.trim();
+  const msg = document.getElementById("loginMsg");
+  
+  const snapshot = await get(ref(db, "players/" + username));
+  if (snapshot.exists()) return msg.textContent = "Username taken";
+  
+  window.playerName = username;
+  window.playerPassword = password;
+  await set(ref(db, "players/" + username), { password, inventory: [] });
+  document.getElementById("loginScreen").style.display = "none";
+};
+
+// --- DELETE ACCOUNT LOGIC (FIXED) ---
+
+// Auto-save setup
+setInterval(saveToFirebase, 15000);
+
+
+
+
+// --- BANNED USERNAMES LIST ---
+
+
+// --- DEVICE SETTINGS ---
+
+
+document.getElementById("loginBtn").onclick = async () => {
+    const username = document.getElementById("loginUsername").value.trim();
+    const password = document.getElementById("loginPassword").value.trim();
+    const msg = document.getElementById("loginMsg");
+    
+    if (!username || !password) return msg.textContent = "Missing info";
+
+    // 1. CHECK THE BAN LIST
+    if (BANNED_PLAYERS.includes(username)) {
+        // Hide login and show termination screen
+        document.getElementById("loginScreen").style.display = "none";
+        
+        // Create the termination screen on the fly
+        const banScreen = document.createElement("div");
+        banScreen.style.cssText = "position:fixed; top:0; left:0; width:100%; height:100%; background:black; color:white; z-index:10000; display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center; font-family:sans-serif;";
+        banScreen.innerHTML = `<h1 style="color:red; font-size:40px;">ACCOUNT BAN NOTICE</h1><p style="font-size:18px;">Your account has been permanently terminated for violating our <a href="https://chucny.github.io/wizard-planet/TOS.html">Terms of Service</a></p>`;
+        document.body.appendChild(banScreen);
+        return;
+    }
+
+    // 2. CHECK FOR COMPUTER (DESKTOP/LAPTOP)
+    // Detects Windows, Mac, or Linux to identify a computer
+    const isComputer = /Windows|Macintosh|Linux/i.test(navigator.userAgent);
+    if (isComputer && !ALLOW_COMPUTER) {
+        return msg.textContent = "Unsupported device. Please use a mobile phone.";
+    }
+
+    // 3. PROCEED WITH FIREBASE LOGIN
+    const snapshot = await get(ref(db, "players/" + username));
+    const data = snapshot.val();
+
+    if (!data) return msg.textContent = "User not found";
+    if (data.password !== password) return msg.textContent = "Wrong password";
+
+    // Success
+    window.playerName = username;
+    window.playerPassword = password;
+    await loadWizards(username);
+    document.getElementById("loginScreen").style.display = "none";
+};
+
+</script><script>
+// ====================== FAKE MOVEMENT (FOR TESTING) ======================
+
+
+// ======================= SAFE GPS + FAKE MODE FIX =======================
+
+// 1. ALWAYS define getDistance globally (fixes "not defined")
+window.getDistance = function(lat1, lon1, lat2, lon2) {
+    const R = 6371e3;
+    const φ1 = lat1 * Math.PI / 180;
+    const φ2 = lat2 * Math.PI / 180;
+    const Δφ = (lat2 - lat1) * Math.PI / 180;
+    const Δλ = (lon2 - lon1) * Math.PI / 180;
+
+    const a = Math.sin(Δφ/2) ** 2 +
+              Math.cos(φ1) * Math.cos(φ2) *
+              Math.sin(Δλ/2) ** 2;
+
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    return R * c;
+};
+
+// =============================================================================
+// AR MODE OVERRIDE & CAMERA LOGIC
+// =============================================================================
+
+// 1. Setup AR Video Element
+const arVideo = document.createElement('video');
+arVideo.id = 'arCamera';
+arVideo.autoplay = true;
+arVideo.setAttribute('playsinline', '');
+arVideo.style.cssText = "position:absolute; top:0; left:0; width:100%; height:100%; object-fit:cover; display:none; z-index:1;";
+document.getElementById('catchScreen').prepend(arVideo);
+
+// 2. State Management
+let arEnabled = false;
+const catchBackground = "url('https://images2.alphacoders.com/117/11762.jpg')";
+const raidBackground = "url('https://wallup.net/wp-content/uploads/2016/05/02/274452-architecture-nature-trees-Sun-pillar-stone-Colosseum-Rome-Italy-capital-stairs-sunlight-path-field-grass-arena-arch-building-monuments.jpg')";
+
+// 3. Camera Control with Fallback
+async function startAR(targetScreen) {
+    const constraints = [
+        { video: { facingMode: { exact: "environment" } } }, // Back camera
+        { video: { facingMode: "environment" } },           // Back camera (relaxed)
+        { video: true }                                     // Any (Front)
+    ];
+
+    for (let config of constraints) {
+        try {
+            const stream = await navigator.mediaDevices.getUserMedia(config);
+            arVideo.srcObject = stream;
+            arVideo.style.display = "block";
+            
+            // Apply to the specific screen calling it
+            targetScreen.style.backgroundImage = "none";
+            targetScreen.style.backgroundColor = "transparent";
+            
+            // Move video element to the current active screen
+            targetScreen.prepend(arVideo);
+            
+            arEnabled = true;
+            updateBtnText();
+            return;
+        } catch (e) {
+            console.log("Retrying camera configuration...");
+        }
+    }
+    alert("Camera not found or permission denied.");
+    arEnabled = false;
+}
+
+function stopAR(targetScreen, originalBG) {
+    if (arVideo.srcObject) {
+        arVideo.srcObject.getTracks().forEach(track => track.stop());
+        arVideo.srcObject = null;
+    }
+    arVideo.style.display = "none";
+    targetScreen.style.backgroundImage = originalBG;
+    arEnabled = false;
+    updateBtnText();
+}
+
+function updateBtnText() {
+    const btn = document.getElementById('arToggleBtn');
+    if(btn) btn.textContent = arEnabled ? "AR: ON" : "AR: OFF";
+}
+
+// 4. UI Toggle Button
+const arBtn = document.createElement('button');
+arBtn.id = "arToggleBtn";
+arBtn.textContent = "AR: OFF";
+arBtn.style.cssText = "position:absolute; top:20px; left:20px; z-index:1000; padding:10px; border-radius:20px; background:rgba(0,0,0,0.6); color:white; border:none; font-weight:bold;";
+arBtn.onclick = () => {
+    const activeScreen = document.getElementById('catchScreen').style.display === "block" 
+        ? document.getElementById('catchScreen') 
+        : document.getElementById('raidBattleScreen');
+    
+    const bg = activeScreen.id === "catchScreen" ? catchBackground : raidBackground;
+    
+    if (arEnabled) stopAR(activeScreen, bg);
+    else startAR(activeScreen);
+};
+document.body.appendChild(arBtn);
+
+// 5. Overriding Global Functions to support AR
+const oldOpenCatch = window.openCatchScreen;
+window.openCatchScreen = function(data) {
+    if(oldOpenCatch) oldOpenCatch(data);
+    arBtn.style.display = "block"; // Show toggle
+    // Ensure game elements are visible over video
+    document.getElementById('catchWizardBall').style.zIndex = "10";
+    document.getElementById('throwBall').style.zIndex = "10";
+};
+
+const oldCloseCatch = window.closeCatchScreen;
+window.closeCatchScreen = function() {
+    if(oldCloseCatch) oldCloseCatch();
+    stopAR(document.getElementById('catchScreen'), catchBackground);
+    arBtn.style.display = "none";
+};
+
+const oldShowRaid = window.showRaidBattleScreen;
+window.showRaidBattleScreen = function(boss) {
+    if(oldShowRaid) oldShowRaid(boss);
+    arBtn.style.display = "block";
+    // Ensure raid elements are visible
+    document.getElementById('raidBossCircle').style.zIndex = "10";
+    document.getElementById('raidPlayerWizard').style.zIndex = "10";
+};
+
+// Initial state
+arBtn.style.display = "none";
+// =============================================================================
+// TIME-BASED SPAWNING OVERRIDE (Every 10 Seconds)
+// =============================================================================
+
+console.log("🛰️ GPS Spawning: ACTIVE");
+
+// 2. ADD THE 10-SECOND TIMER
+setInterval(() => {
+    // Only spawn if player is logged in and not in a menu
+    const isLogged = window.playerName;
+    const isMapVisible = document.getElementById('loginScreen').style.display === "none";
+    const isCatching = document.getElementById('catchScreen').style.display === "block";
+    const isRaiding = document.getElementById('raidBattleScreen').style.display === "block";
+
+    if (isLogged && isMapVisible && !isCatching && !isRaiding) {
+        
+        // Spawn at a random spot on the map
+        const x = Math.random() * (window.innerWidth - 100) + 50;
+        const y = Math.random() * (window.innerHeight - 100) + 50;
+
+        spawnWizardBall(x, y);
+        console.log("⏱️ Timer Spawn: A wizard appeared!");
+    }
+}, 1200000);
+// =============================================================================
+// MOTION SENSOR SPAWNING (Accelerometer)
+// =============================================================================
+
+// =============================================================================
+// THE OFFICIAL MOTION OVERRIDE
+// =============================================================================
+
+// 1. Stop the high-power GPS "Watch" immediately
+if (navigator.geolocation && window.lastPos) {
+    // We clear the tracker so it stops calculating that 500m distance
+    navigator.geolocation.clearWatch(window.gpsWatcher);
+    console.log("🚫 GPS Distance Tracking: DISABLED");
+}
+
+// 2. The New Physical Spawn Logic
+let motionCooldown = false;
+
+function triggerMotionSpawn() {
+    if (motionCooldown) return;
+    
+    // Safety checks: player must be logged in and on the map
+    const canSpawn = window.playerName && 
+                     document.getElementById('loginScreen').style.display === "none" &&
+                     document.getElementById('catchScreen').style.display !== "block";
+
+    if (canSpawn) {
+        console.log("👟 Movement detected! Summoning wizard...");
+        spawnWizardBall(
+            Math.random() * (window.innerWidth - 100) + 50,
+            Math.random() * (window.innerHeight - 100) + 50
+        );
+        
+        // Cooldown: Prevents 50 wizards from spawning during one heavy shake
+        motionCooldown = true;
+        setTimeout(() => { motionCooldown = false; }, 2500); 
+    }
+}
+
+// 3. Set the Sensor Sensitivity
+window.addEventListener('devicemotion', (event) => {
+    const acc = event.accelerationIncludingGravity;
+    if (!acc) return;
+
+    // Calculate total movement force
+    const totalForce = Math.sqrt(acc.x**2 + acc.y**2 + acc.z**2);
+
+    // Threshold of 15-18 is perfect for a strong step or a pocket bounce
+    if (totalForce > 16) {
+        triggerMotionSpawn();
+    }
+});
+
+// 4. Mobile Permission Fix
+// iOS requires a user gesture to start sensors. We hook it to the login button.
+document.getElementById("loginBtn").addEventListener('click', () => {
+    if (typeof DeviceMotionEvent.requestPermission === 'function') {
+        DeviceMotionEvent.requestPermission().catch(console.error);
+    }
+});
+// =============================================================================
+// NIANTIC-STYLE PEDOMETER POPUP SYSTEM
+// =============================================================================
+
+// 1. Create the Popup Element
+const pedoPopupHTML = `
+<div id="pedometerPopup" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.85); z-index:10001; align-items:center; justify-content:center; font-family: sans-serif;">
+    <div style="background: white; width: 85%; max-width: 400px; border-radius: 25px; overflow: hidden; text-align: center; box-shadow: 0 10px 30px rgba(0,0,0,0.5);">
+        <div style="background: linear-gradient(135deg, #3498db, #8e44ad); padding: 40px 20px; color: white;">
+            <div style="font-size: 60px; margin-bottom: 10px;"></div>
+            <h2 style="margin: 0; font-size: 22px; font-weight: 800; letter-spacing: 1px;">GAME USES SENSORS</h2>
+        </div>
+        <div style="padding: 30px; color: #34495e;">
+            <p style="font-size: 16px; line-height: 1.6; margin-bottom: 20px;">
+                Wizards appear when you walk! Keep the app open and <b>physically move</b> to discover them nearby.
+            </p>
+            <div style="background: #f7f9f9; padding: 15px; border-radius: 15px; font-size: 13px; color: #7f8c8d; border: 1px solid #eee;">
+                <b>REMEMBER:</b> Stay alert at all times and be aware of your surroundings.
+            </div>
+        </div>
+        <button id="closePedometerBtn" style="width: 80%; padding: 15px; border: none; background: #2ecc71; color: white; font-weight: 900; font-size: 18px; cursor: pointer; border-radius: 50px; margin-bottom: 25px; box-shadow: 0 4px 0 #27ae60;">
+            OK
+        </button>
+    </div>
+</div>
+`;
+
+// Inject into body
+document.body.insertAdjacentHTML('beforeend', pedoPopupHTML);
+
+// 2. Popup Logic
+function triggerPedometerNotice() {
+    const popup = document.getElementById("pedometerPopup");
+    popup.style.display = "flex";
+    
+    document.getElementById("closePedometerBtn").onclick = () => {
+        popup.style.display = "none";
+        // Final permission request for motion sensors (vital for iOS)
+        if (typeof DeviceMotionEvent.requestPermission === 'function') {
+            DeviceMotionEvent.requestPermission().then(state => {
+                console.log("Sensor state:", state);
+            }).catch(console.error);
+        }
+    };
+}
+
+// 3. Hook into Login Success
+// We watch the login screen. When it disappears, we show the notice.
+const loginObserver = new MutationObserver((mutations) => {
+    mutations.forEach((mutation) => {
+        if (mutation.attributeName === "style") {
+            const display = window.getComputedStyle(document.getElementById("loginScreen")).display;
+            if (display === "none") {
+                setTimeout(triggerPedometerNotice, 600); // Smooth delay after login
+                loginObserver.disconnect(); // Only show once per session
+            }
+        }
+    });
+});
+
+loginObserver.observe(document.getElementById("loginScreen"), { attributes: true });
+</script>
+<script>
+// =============================================================================
+// FINAL SYSTEM STABILITY FIX
+// =============================================================================
+
+/**
+ * 1. FIX THE GPS WATCHER ASSIGNMENT
+ * Your current code calls watchPosition but doesn't save the ID.
+ * This block re-initializes it correctly so it can be cleared later.
+ */
+if (navigator.geolocation) {
+    // We overwrite the watcher and finally save the ID to window.gpsWatcher
+    window.gpsWatcher = navigator.geolocation.watchPosition((pos) => {
+        const currentLat = pos.coords.latitude;
+        const currentLng = pos.coords.longitude;
+        if (window.lastPos) {
+            const distance = getDistance(window.lastPos.lat, window.lastPos.lng, currentLat, currentLng);
+            if (distance >= 500) {
+                spawnWizardBall(Math.random() * (window.innerWidth - 100) + 50, Math.random() * (window.innerHeight - 100) + 50);
+            }
+        }
+        window.lastPos = { lat: currentLat, lng: currentLng };
+    }, (err) => console.error("GPS Error:", err), { enableHighAccuracy: true });
+}
+
+/**
+ * 2. EXECUTE THE OVERRIDE
+ * Now that window.gpsWatcher exists, we can successfully kill the high-power GPS
+ * to let the Accelerometer (Motion) take over as intended.
+ */
+if (window.gpsWatcher) {
+    navigator.geolocation.clearWatch(window.gpsWatcher);
+    console.log("✅ GPS Watcher found and deactivated. Pedometer mode engaged.");
+}
+
+/**
+ * 3. IOS SENSOR PERMISSION FIX
+ * On modern iPhones, the 'devicemotion' event will not fire unless the user 
+ * explicitly grants permission via a click. We attach this to your popup button.
+ */
+const closePedometerBtn = document.getElementById("closePedometerBtn");
+if (closePedometerBtn) {
+    // We wrap the existing 'onclick' to add the permission request
+    const originalPopupLogic = closePedometerBtn.onclick;
+    
+    closePedometerBtn.onclick = () => {
+        // Execute the original "close window" code
+        if (originalPopupLogic) originalPopupLogic();
+
+        // Request Device Motion permission (iOS 13+)
+        if (typeof DeviceMotionEvent !== 'undefined' && typeof DeviceMotionEvent.requestPermission === 'function') {
+            DeviceMotionEvent.requestPermission()
+                .then(response => {
+                    if (response === 'granted') {
+                        console.log("Motion sensor access granted.");
+                    } else {
+                        console.warn("Motion sensor access denied.");
+                    }
+                })
+                .catch(console.error);
+        }
+    };
+}
+</script>
+<script type="module">
+// We need this to be a module to access the Firebase 'db' and 'ref'
+import { getDatabase, ref, remove } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-database.js";
+
+// 1. Re-create the Settings UI with FIXED IDs and layout
+const settingsHTML = `
+    <button id="settingsBtn">⚙️</button>
+    <div id="settingsMenu" style="display:none; position:fixed; top:125px; left:20px; background:white; padding:15px; border-radius:15px; box-shadow:0 5px 20px rgba(0,0,0,0.3); z-index:10000; min-width:150px;">
+        <h4 style="margin:0 0 15px 0; font-size:14px; color:#333; text-align:center;">Settings</h4>
+        <button id="finalDeleteBtn" class="danger-zone-btn" style="width:100%; background:#ff4757; color:white; border:none; padding:10px; border-radius:5px; font-weight:bold; cursor:pointer;">DELETE ACCOUNT</button>
+    </div>
+`;
+document.body.insertAdjacentHTML('beforeend', settingsHTML);
+
+// 2. Toggle Logic
+document.getElementById('settingsBtn').onclick = () => {
+    const menu = document.getElementById('settingsMenu');
+    menu.style.display = menu.style.display === 'block' ? 'none' : 'block';
+};
+
+// 3. THE ACTUAL DELETE LOGIC (Local + Firebase)
+document.getElementById('finalDeleteBtn').onclick = async () => {
+    const username = window.playerName;
+    
+    if (!username) {
+        alert("Not logged in.");
+        return;
+    }
+
+    if (confirm(`⚠️ FINAL WARNING: Delete account "${username}" and all wizards permanently?`)) {
+        try {
+            const db = getDatabase();
+            // Delete from Firebase
+            await remove(ref(db, "players/" + username));
+            
+            // Clear local storage
+            localStorage.clear();
+            
+            alert("Account scrubbed from existence. Restarting...");
+            window.location.reload();
+        } catch (err) {
+            console.error("Delete failed:", err);
+            alert("Error deleting account. Check console.");
+        }
+    }
+};
+
+console.log("✅ Settings Fixed: ID mismatch resolved and Firebase deletion linked.");
+</script>
+
+<style>
+/* --- Vertical HUD Stack (Left Side) --- */
+#arToggleBtn {
+    position: fixed;
+    top: 20px; 
+    left: 20px;
+    z-index: 1000;
+    padding: 10px 15px;
+    border-radius: 20px;
+    background: rgba(0, 0, 0, 0.6);
+    color: white;
+    border: 2px solid white;
+    font-weight: bold;
+    cursor: pointer;
+}
+
+#settingsBtn {
+    position: fixed;
+    top: 75px; /* Moved down to sit below the AR button */
+    left: 20px;
+    z-index: 1000;
+    font-size: 20px;
+    background: rgba(255, 255, 255, 0.8);
+    border: 2px solid #ccc;
+    border-radius: 50%;
+    width: 45px;
+    height: 45px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+}
+
+#settingsMenu {
+    display: none;
+    position: fixed;
+    top: 125px; /* Adjusted to open below the gear */
+    left: 20px;
+    background: white;
+    padding: 15px;
+    border-radius: 15px;
+    box-shadow: 0 5px 20px rgba(0,0,0,0.3);
+    z-index: 1000;
+    min-width: 150px;
+}</style><script>// ====================== RELEASE & RENAME SYSTEM ======================
+
+// 1. Update the Card UI to include Release and Rename buttons
+const originalCreateWizardCard = createWizardCard;
+createWizardCard = function(wizardData) {
+    const card = originalCreateWizardCard(wizardData);
+    
+    // Container for our new actions
+    const actionContainer = document.createElement("div");
+    actionContainer.style.cssText = "display:flex; flex-direction:column; gap:5px; margin-top:10px;";
+
+    // --- RENAME BUTTON ---
+    const renameBtn = document.createElement("button");
+    renameBtn.textContent = "✏️ Rename";
+    renameBtn.style.cssText = "font-size:10px; padding:4px; cursor:pointer; border-radius:4px; border:1px solid #ccc; background:white;";
+    renameBtn.onclick = (e) => {
+        e.stopPropagation();
+        const newName = prompt("Enter new name for " + wizardData.name + ":", wizardData.name);
+        if (newName && newName.trim() !== "") {
+            wizardData.name = newName.trim();
+            openInventory(); // Refresh UI
+        }
+    };
+
+    // --- RELEASE BUTTON ---
+    const releaseBtn = document.createElement("button");
+    releaseBtn.textContent = "❌ Release";
+    releaseBtn.className = "release-btn"; // Uses your existing CSS
+    releaseBtn.style.cssText = "font-size:10px; padding:4px; cursor:pointer; border-radius:4px; background:#ffebee; color:#f44336; border:1px solid #f44336;";
+    releaseBtn.onclick = (e) => {
+        e.stopPropagation();
+        if (confirm(`Are you sure you want to release ${wizardData.name}? It will be gone forever!`)) {
+            // Remove from local inventory array
+            const index = inventory.findIndex(w => w.id === wizardData.id);
+            if (index > -1) {
+                inventory.splice(index, 1);
+                openInventory(); // Refresh UI
+                alert("Wizard released back into the wild.");
+            }
+        }
+    };
+
+    actionContainer.appendChild(renameBtn);
+    actionContainer.appendChild(releaseBtn);
+    card.appendChild(actionContainer);
+    
+    return card;
+};
+
+// 2. Ensure Inventory refreshes correctly when searching
+// (This hooks into your existing openInventory logic)
+console.log("Release and Rename features initialized.");
+
+// ====================== SHINY RAID SYSTEM ======================
+
+// Override the collection function to add a 1/10 shiny chance
+// ====================== DYNAMIC SHAPE SYSTEM ======================
+
+// ====================== DYNAMIC SHAPE & SHINY SYSTEM ======================
+
+// SET THE CURRENT EVENT SHAPE HERE: 3=Triangle, 4=Square, 5=Pentagon, 6=Hexagon, 8=Octagon
+
+
+// Helper to generate the polygon shape
+function getPolygonPath(sides) {
+    if (!sides || sides < 3) return "none";
+    const points = [];
+    for (let i = 0; i < sides; i++) {
+        const angle = (i / sides) * (2 * Math.PI) - (Math.PI / 2);
+        const x = 50 + 50 * Math.cos(angle);
+        const y = 50 + 50 * Math.sin(angle);
+        points.push(`${x.toFixed(2)}% ${y.toFixed(2)}%`);
+    }
+    return `polygon(${points.join(', ')})`;
+}
+
+// 1. Fixed Reward Logic (Added missing comma)
+collectPolygonFromRaid = function(boss) {
+    const isShiny = Math.random() < 0.10;
+    const raidReward = {
+        id: "polygon-" + Date.now(),
+        name: isShiny ? "✨ SHINY " + boss.name : boss.name,
+        color: isShiny ? "white" : (boss.color || "purple"), // Comma was missing here!
+        iv: [
+            6 + Math.floor(Math.random() * 5),
+            6 + Math.floor(Math.random() * 5),
+            6 + Math.floor(Math.random() * 5)
+        ].join("/"),
+        shiny: isShiny,
+        shapeSides: boss.shapeSides || CURRENT_RAID_SHAPE_SIDES
+    };
+
+    openCatchScreen(raidReward);
+    if(isShiny) alert("LUCKY! This Raid Boss is SHINY!");
+};
+
+// 2. Update Catch Screen to show the correct shape
+const originalOpenCatchScreen1 = openCatchScreen;
+openCatchScreen = function(wizardData) {
+    originalOpenCatchScreen1(wizardData);
+    const sides = wizardData.shapeSides || (wizardData.shape === "octagon" ? 8 : 0);
+    
+    if (sides >= 3) {
+        catchWizardElem.style.clipPath = getPolygonPath(sides);
+        catchWizardElem.style.borderRadius = "0";
+    } else {
+        catchWizardElem.style.clipPath = "none";
+        catchWizardElem.style.borderRadius = "50%";
+    }
+};
+
+// 3. Update Raid Screen Boss Shape
+const originalShowRaidBattleScreen1 = showRaidBattleScreen;
+showRaidBattleScreen = function(boss) {
+    boss.shapeSides = boss.shapeSides || CURRENT_RAID_SHAPE_SIDES;
+    originalShowRaidBattleScreen1(boss);
+    raidBossCircleElem.style.clipPath = getPolygonPath(boss.shapeSides);
+    raidBossCircleElem.style.borderRadius = "0";
+};
+
+// 4. Update Inventory Card Shape
+const originalCreateWizardCard1 = createWizardCard;
+createWizardCard = function(wizardData) {
+    const card = originalCreateWizardCard1(wizardData);
+    const colorDiv = card.querySelector(".wizard-color");
+    const sides = wizardData.shapeSides || (wizardData.shape === "octagon" ? 8 : 0);
+    
+    if (sides >= 3) {
+        colorDiv.style.clipPath = getPolygonPath(sides);
+        colorDiv.style.borderRadius = "0";
+    }
+    return card;
+};
+
+// 5. Update Boss Creator to assign the current event shape
+const originalCreateRaidBoss = createRaidBoss;
+createRaidBoss = function(hp = BOSS_HP_VAR) {
+    const boss = originalCreateRaidBoss(hp);
+    boss.shapeSides = CURRENT_RAID_SHAPE_SIDES;
+    return boss;
+};
+
+
+
+
+// Toggle Raid Menu Logic
+document.getElementById('raidMenuBtn').onclick = function() {
+    const content = document.getElementById('raidMenuContent');
+    if (content.style.display === "none" || content.style.display === "") {
+        content.style.display = "flex";
+        this.style.transform = "scale(0.9)"; // Slight squash effect when open
+    } else {
+        content.style.display = "none";
+        this.style.transform = "scale(1)";
+    }
+};
+
+// Close menu automatically when a sub-button is clicked
+function closeRaidMenu() {
+    document.getElementById('raidMenuContent').style.display = "none";
+}
+
+// Hook into your existing functions to auto-close the menu
+const originalCreateRaid = window.createRaid;
+window.createRaid = function() {
+    closeRaidMenu();
+    originalCreateRaid();
+};
+
+const originalJoinRaid = window.joinRaid;
+window.joinRaid = function() {
+    closeRaidMenu();
+    originalJoinRaid();
+};
+</script>
+
+<style>
+    /* 1. Setup Fog and Perspective */
+    body {
+        perspective: 1200px;
+        background-color: #add8e6; /* Match fog color */
+        margin: 0;
+        overflow: hidden;
+    }
+    #map {
+        transform-style: preserve-3d;
+        transition: transform 0.1s ease-out;
+    }
+    /* The Foggy Horizon Overlay */
+    body::after {
+        content: "";
+        position: fixed;
+        top: 0; left: 0; width: 100%; height: 100%;
+        background: linear-gradient(to bottom, 
+            rgba(173, 216, 230, 1) 0%, 
+            rgba(173, 216, 230, 0.8) 20%, 
+            rgba(173, 216, 230, 0) 60%);
+        pointer-events: none;
+        z-index: 999;
+    }
+</style>
+
+<script>
+(function() {
+    // Scene State
+    let angle = 0;
+    let isDragging = false;
+    let startX = 0;
+    const map = document.getElementById('map');
+
+    // --- 1. The Render Function ---
+    function update3D() {
+        // Tilt the ground and spin it
+        // translateY shifts the "center" so the bottom of the map isn't cut off
+        map.style.transform = `rotateX(60deg) translateY(150px) rotateZ(${angle}deg)`;
+
+        // Force Player and Wizards to stay FLAT (Parallel to ground)
+        const entities = document.querySelectorAll('#player, .red-ball');
+        entities.forEach(el => {
+            el.style.transform = `translate(-50%, -50%)`; 
+            // We do NOT use rotateX here so they don't stand up
+        });
+    }
+
+    // --- 2. Fixed Scrolling Logic (Natural Grab & Pull) ---
+    const handleStart = (x) => {
+        isDragging = true;
+        startX = x;
+    };
+
+    const handleMove = (x) => {
+        if (!isDragging) return;
+        let dx = x - startX;
+        angle -= dx * 0.4; // Pull right = map turns left
+        startX = x;
+        update3D();
+    };
+
+    const handleEnd = () => { isDragging = false; };
+
+    // Global Listeners to prevent "stuck" scrolling
+    window.addEventListener('mousedown', (e) => handleStart(e.clientX));
+    window.addEventListener('mousemove', (e) => handleMove(e.clientX));
+    window.addEventListener('mouseup', handleEnd);
+
+    window.addEventListener('touchstart', (e) => handleStart(e.touches[0].clientX));
+    window.addEventListener('touchmove', (e) => handleMove(e.touches[0].clientX));
+    window.addEventListener('touchend', handleEnd);
+
+    // --- 3. Fix the "Buried/Corner" Spawn Issue ---
+    // Highjack spawn function to ensure wizards are children of the map
+    const originalSpawn = window.spawnWizardBall;
+    window.spawnWizardBall = function(x, y, data) {
+        originalSpawn(x, y, data);
+        const balls = document.getElementsByClassName('red-ball');
+        const latest = balls[balls.length - 1];
+        if (latest && latest.parentElement !== map) {
+            map.appendChild(latest);
+        }
+        update3D();
+    };
+
+    // Initial Run
+    update3D();
+    console.log("3D Perspective Initialized: Flat Wizards & Fog active.");
+})();
+</script>
+
+
+<style>
+    /* 1. Remove the old fog that covered the whole screen */
+    body::after {
+        display: none !important;
+    }
+
+    /* 2. Create a Fog Overlay specifically for the Map */
+    #map-fog {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        /* Gradient matches your background color to hide the map edge */
+        background: linear-gradient(to bottom, 
+            rgba(173, 216, 230, 1) 0%, 
+            rgba(173, 216, 230, 0.8) 25%, 
+            rgba(173, 216, 230, 0) 60%);
+        pointer-events: none; /* Allows clicking through the fog to the map */
+        z-index: 5; /* Higher than map tiles, but LOWER than your UI buttons */
+    }
+
+    /* 3. Ensure UI buttons are always on top of the fog */
+    #raidUIContainer, #inventoryBtn, #settingsBtn, .ui-element {
+        z-index: 1000 !important;
+    }
+</style>
+
+<script>
+(function() {
+    // Create the fog element if it doesn't exist
+    if (!document.getElementById('map-fog')) {
+        const fog = document.createElement('div');
+        fog.id = 'map-fog';
+        // Insert it before the UI elements
+        document.body.appendChild(fog);
+    }
+})();
+// Function to toggle global UI visibility
+function setGlobalUIVisibility(visible) {
+    const display = visible ? "flex" : "none";
+    document.getElementById('raidUIContainer').style.display = display;
+    document.getElementById('inventoryButton').style.display = display;
+}
+
+// Update existing functions to hide/show UI
+const originalOpenCatch = openCatchScreen;
+openCatchScreen = function(data) {
+    setGlobalUIVisibility(false);
+    originalOpenCatch(data);
+};
+
+const originalCloseCatch = closeCatchScreen;
+closeCatchScreen = function() {
+    setGlobalUIVisibility(true);
+    originalCloseCatch();
+};
+
+const originalShowRaid = showRaidBattleScreen;
+showRaidBattleScreen = function(boss) {
+    setGlobalUIVisibility(false);
+    originalShowRaid(boss);
+};
+</script>
+
+<style>
+    #levelBtnHUD {
+        position: fixed; top: 85px; right: 20px;
+        width: 54px; height: 54px; border-radius: 50%;
+        background: radial-gradient(circle, #3498db, #2980b9);
+        border: 3px solid #fff; box-shadow: 0 4px 15px rgba(0,0,0,0.4);
+        color: white; font-family: 'Arial Black', sans-serif; font-size: 18px;
+        display: flex; align-items: center; justify-content: center;
+        cursor: pointer; z-index: 9999;
+    }
+    #levelOverlay {
+        display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+        background: rgba(0,0,0,0.85); z-index: 10000; justify-content: center; align-items: center;
+    }
+    .level-card {
+        background: white; width: 85%; max-width: 380px; border-radius: 30px;
+        padding: 30px; text-align: center; font-family: sans-serif;
+    }
+    .lvl-big-number { font-size: 60px; font-weight: 900; color: #3498db; margin: 0; }
+    .xp-container {
+        width: 100%; height: 22px; background: #e0e0e0; border-radius: 11px;
+        margin: 20px 0 10px 0; overflow: hidden; border: 1px solid #ccc;
+    }
+    #xpFill { height: 100%; width: 0%; background: linear-gradient(90deg, #3498db, #2ecc71); transition: width 0.6s; }
+    .close-lvl-btn {
+        margin-top: 20px; padding: 12px 40px; border-radius: 25px; 
+        border: none; background: #34495e; color: white; 
+        font-weight: bold; cursor: pointer;
+    }
+</style>
+
+<div id="levelBtnHUD" onclick="toggleLevelMenu()">1</div>
+
+<div id="levelOverlay">
+    <div class="level-card">
+        <h2 style="margin:0; font-size: 14px; color: #888;">TRAINER LEVEL</h2>
+        <p id="displayLvl" class="lvl-big-number">1</p>
+        <div class="xp-container"><div id="xpFill"></div></div>
+        <div id="xpStatusLabel" style="font-weight:bold; color:#555;">0 / 5 Catches</div>
+        <button class="close-lvl-btn" onclick="toggleLevelMenu()">CLOSE</button>
+    </div>
+</div>
+
+<script>
+    // --- GLOBAL UI ---
+    function toggleLevelMenu() {
+        const overlay = document.getElementById('levelOverlay');
+        const isOpening = overlay.style.display !== 'flex';
+        overlay.style.display = isOpening ? 'flex' : 'none';
+        if (isOpening && window.refreshLevelSystem) window.refreshLevelSystem();
+    }
+
+    // --- THE SPLIT FIXER OVERRIDE ---
+    // We wait a tiny bit to make sure the original function exists, then wrap it
+    window.addEventListener('load', () => {
+        if (typeof window.createWizardCard === 'function') {
+            const oldWizardCard = window.createWizardCard;
+            
+            window.createWizardCard = function(wizard, ...args) {
+                // If this is our XP Tracker, stop immediately. Do not build a card.
+                if (!wizard || wizard.isXpTracker) return null;
+                
+                // If wizard exists but moves/types are missing, add empty strings 
+                // so the original .split(',') doesn't crash
+                if (wizard.moves === undefined) wizard.moves = "";
+                if (wizard.types === undefined) wizard.types = "";
+                
+                return oldWizardCard.apply(this, [wizard, ...args]);
+            };
+            console.log("✅ createWizardCard override applied (Split-Fixer Active)");
+        }
+    });
+</script>
+
+<script type="module">
+    import { getDatabase, ref, update } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-database.js";
+
+    const MAX_LEVEL = 40;
+    const TARGET_WIZARDS = 2000;
+    const getReq = (lvl) => (lvl <= 1) ? 0 : Math.floor(5 * Math.pow(lvl, 1.635));
+
+    // 1. REFRESH LEVEL
+    window.refreshLevelSystem = function() {
+        if (!window.inventory) return;
+        let xpTracker = window.inventory.find(w => w && w.isXpTracker === true);
+        let xp = xpTracker ? xpTracker.xpCount : 0;
+
+        let currentLvl = 1;
+        for (let i = 1; i <= MAX_LEVEL; i++) {
+            if (xp >= getReq(i)) currentLvl = i; else break;
+        }
+
+        const nextXP = currentLvl < MAX_LEVEL ? getReq(currentLvl + 1) : TARGET_WIZARDS;
+        const prevXP = getReq(currentLvl);
+        const progress = currentLvl === MAX_LEVEL ? 100 : ((xp - prevXP) / (nextXP - prevXP)) * 100;
+
+        document.getElementById('levelBtnHUD').textContent = currentLvl;
+        document.getElementById('displayLvl').textContent = currentLvl;
+        document.getElementById('xpFill').style.width = progress + "%";
+        document.getElementById('xpStatusLabel').textContent = `${xp} / ${nextXP} Catches`;
+    };
+
+    // 2. ADD XP
+    window.addPermanentXP = async function() {
+        if (!window.inventory || !window.playerName) return;
+
+        let tracker = window.inventory.find(w => w && w.isXpTracker === true);
+        
+        if (!tracker) {
+            window.inventory.push({ 
+                isXpTracker: true, 
+                xpCount: 1,
+                name: "SYSTEM_DATA",
+                id: "XP_TRACKER",
+                moves: "", // Adding these just in case the filter fails
+                types: "" 
+            });
+        } else {
+            tracker.xpCount++;
+        }
+
+        const db = getDatabase();
+        await update(ref(db, "players/" + window.playerName), {
+            inventory: window.inventory
+        });
+
+        window.refreshLevelSystem();
+    };
+
+    // Hook catch screen
+    const oldClose = window.closeCatchScreen;
+    window.closeCatchScreen = function() {
+        window.addPermanentXP();
+        if(oldClose) oldClose();
+    };
+
+    setTimeout(window.refreshLevelSystem, 2000);
+</script><script>
+// --- HUD VISIBILITY CONTROLLER ---
+function updateHUDVisibility() {
+    const levelBtn = document.getElementById('levelBtnHUD');
+    const login = document.getElementById('loginScreen');
+    const catchS = document.getElementById('catchScreen');
+    const raidS = document.getElementById('raidBattleScreen');
+
+    // If any of these screens are visible, HIDE the level button
+    const shouldHide = (
+        (login && login.style.display !== 'none') || 
+        (catchS && catchS.style.display !== 'none' && catchS.style.display !== '') || 
+        (raidS && raidS.style.display !== 'none' && raidS.style.display !== '')
+    );
+
+    if (levelBtn) {
+        levelBtn.style.display = shouldHide ? 'none' : 'flex';
+    }
+}
+
+// Hook into existing screen logic using a MutationObserver
+// This watches for style changes (like display: none -> block)
+const observer = new MutationObserver(() => updateHUDVisibility());
+const config = { attributes: true, attributeFilter: ['style'] };
+
+// Start watching the screens
+document.addEventListener('DOMContentLoaded', () => {
+    const screens = ['loginScreen', 'catchScreen', 'raidBattleScreen'];
+    screens.forEach(id => {
+        const el = document.getElementById(id);
+        if (el) observer.observe(el, config);
+    });
+    updateHUDVisibility(); // Initial check
+});
+
+// Extra safety: update visibility when these specific functions are called
+const originalOpenCatch = window.openCatchScreen;
+window.openCatchScreen = function(data) {
+    if(originalOpenCatch) originalOpenCatch(data);
+    updateHUDVisibility();
+};
+
+const originalCloseCatch = window.closeCatchScreen;
+window.closeCatchScreen = function() {
+    if(originalCloseCatch) originalCloseCatch();
+    updateHUDVisibility();
+};
+
+const originalShowRaid = window.showRaidBattleScreen;
+window.showRaidBattleScreen = function(boss) {
+    if(originalShowRaid) originalShowRaid(boss);
+    updateHUDVisibility();
+};</script><script>
+// --- 1. THE "VISIBILITY POLICE" ---
+function syncHUDVisibility() {
+    const levelBtn = document.getElementById('levelBtnHUD');
+    if (!levelBtn) return;
+
+    // Check every "Fullscreen" screen
+    const screens = [
+        document.getElementById('loginScreen'),
+        document.getElementById('catchScreen'),
+        document.getElementById('raidBattleScreen')
+    ];
+
+    // If ANY of these screens are currently visible, HIDE the button
+    const isShowingBlockedScreen = screens.some(s => 
+        s && s.style.display !== 'none' && s.style.display !== ''
+    );
+
+    levelBtn.style.setProperty('display', isShowingBlockedScreen ? 'none' : 'flex', 'important');
+    
+    // Also hide it if the login screen is active (initial state)
+    const login = document.getElementById('loginScreen');
+    if (login && login.style.display !== 'none') {
+        levelBtn.style.display = 'none';
+    }
+}
+
+// --- 2. HOOK INTO ALL SCREEN TRANSITIONS ---
+// This ensures that even if CSS fails, the JS functions force it hidden
+const wrap = (fnName, show) => {
+    const original = window[fnName];
+    window[fnName] = function(...args) {
+        if (original) original.apply(this, args);
+        syncHUDVisibility();
+    };
+};
+
+// Force visibility sync when these functions are called
+['openCatchScreen', 'closeCatchScreen', 'showRaidBattleScreen', 'createRaid', 'joinRaid'].forEach(fn => wrap(fn));
+
+// --- 3. THE BACKUP OBSERVER ---
+// Watch for any style changes on the body or the screens themselves
+const hudObserver = new MutationObserver(syncHUDVisibility);
+document.addEventListener('DOMContentLoaded', () => {
+    const targets = ['loginScreen', 'catchScreen', 'raidBattleScreen'];
+    targets.forEach(id => {
+        const el = document.getElementById(id);
+        if (el) hudObserver.observe(el, { attributes: true, attributeFilter: ['style'] });
+    });
+    
+    // Initial check for the login screen
+    syncHUDVisibility();
+});
+
+// Run a check every 500ms just in case (the "fail-safe")
+setInterval(syncHUDVisibility, 500);</script>
+<style>
+    #levelBtnHUD {
+        position: fixed; 
+        top: 85px; 
+        right: 20px;
+        width: 54px; 
+        height: 54px; 
+        border-radius: 50%;
+        background: radial-gradient(circle, #3498db, #2980b9);
+        border: 3px solid #fff; 
+        box-shadow: 0 4px 15px rgba(0,0,0,0.4);
+        color: white; 
+        font-family: 'Arial Black', sans-serif; 
+        font-size: 18px;
+        display: flex; 
+        align-items: center; 
+        justify-content: center;
+        cursor: pointer;
+        
+        /* THE FIX: Lower the z-index so it goes UNDER menus and raid screens */
+        z-index: 500; 
+    }
+</style>
+<script type="module">
+    import { ref, set, get } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+
+    window.addEventListener('load', () => {
+        const regBtn = document.getElementById('registerBtn');
+        
+        if (regBtn) {
+            regBtn.onclick = async function() {
+                const activeDb = window.db; 
+
+                if (!activeDb) {
+                    alert("System Error: Firebase not ready.");
+                    return;
+                }
+
+                const username = document.getElementById('loginUsername').value.trim();
+                const password = document.getElementById('loginPassword').value.trim();
+
+                if (!username || !password) {
+                    alert("Please enter a username and password.");
+                    return;
+                }
+
+                try {
+                    const userCheck = await get(ref(activeDb, 'players/' + username));
+                    if (userCheck.exists()) {
+                        alert("Username already taken!");
+                        return;
+                    }
+
+                    const today = new Date().toISOString().split('T')[0];
+
+                    const newPlayerData = {
+                        password: password,
+                        inventory: [
+                            {
+                                id: "XP_TRACKER",
+                                isXpTracker: true,
+                                name: "SYSTEM_DATA",
+                                xpCount: 0,
+                                accountCreated: today 
+                            }
+                        ]
+                    };
+
+                    await set(ref(activeDb, 'players/' + username), newPlayerData);
+                    
+                    // --- AUTO LOGIN LOGIC ---
+                    alert("Account registeration successful! \n Login with your username and password to access your new account.");
+
+                    // 1. Save credentials so the game knows who you are
+                    localStorage.setItem("username", username);
+                    localStorage.setItem("password", password);
+
+                    // 2. Trigger your game's existing login function if it exists
+                    if (typeof window.login === "function") {
+                        window.login(); 
+                    } else {
+                        // 3. Fallback: If login() isn't global, just refresh
+                        // Since we saved to localStorage, your game should 
+                        // auto-load the player on refresh.
+                        location.reload();
+                    }
+                    
+                } catch (error) {
+                    console.error("Critical Reg Error:", error);
+                    alert("Registration failed: " + error.message);
+                }
+            };
+        }
+    });
+window.inventory = inventory;
+// --- Trophy HUD Logic ---
+
+// Function to show the HUD with live data
+document.getElementById('trophyBtn').onclick = function() {
+    // 1. Get the LIVE username from the session (fallback to localStorage if needed)
+    // We do NOT use .toUpperCase() here so we keep small/big letters
+    const currentPlayer = window.playerName || localStorage.getItem("username") || "Wizard";
+    
+    // 2. Determine if OG (2026-04-27) or New Date
+    let startDate = "2026-04-27"; 
+    
+    if (window.inventory) {
+        const systemData = window.inventory.find(item => item.id === "XP_TRACKER" || item.name === "SYSTEM_DATA");
+        if (systemData && systemData.accountCreated) {
+            startDate = systemData.accountCreated;
+        }
+    }
+
+    // 3. Update the UI
+    document.getElementById('hudUsername').innerText = currentPlayer;
+    document.getElementById('hudDate').innerText = "JOINED: " + startDate;
+    
+    // 4. Open HUD
+    document.getElementById('profileHUD').style.display = 'flex';
+};
+</script>
+
+
+<div id="trophyBtn" style="position: fixed; bottom: 80px; right: 20px; width: 60px; height: 60px; background: white; border-radius: 50%; display: flex; justify-content: center; align-items: center; cursor: pointer; box-shadow: 0 4px 15px rgba(0,0,0,0.3); z-index: 999; border: 4px solid #ffcc00;">
+    <span style="font-size: 30px;">🏆</span>
+</div>
+
+<div id="profileHUD" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(255,255,255,0.95); z-index: 2000; flex-direction: column; align-items: center; justify-content: center; font-family: sans-serif;">
+    <div style="text-align: center; width: 90%;">
+        <div style="font-size: 12px; color: #aaa; letter-spacing: 2px; font-weight: bold;">TRAINER PROFILE</div>
+        
+        <div id="hudUsername" style="font-size: 40px; font-weight: 900; color: #2c3e50; margin: 10px 0;">...</div>
+        
+        <div id="hudDate" style="font-size: 14px; color: #27ae60; background: #e8f8f5; padding: 8px 20px; border-radius: 20px; display: inline-block; font-weight: bold; margin-bottom: 40px;">...</div>
+
+        <div style="width: 180px; height: 180px; background: #f0f0f0; border-radius: 50%; margin: 0 auto 40px; display: flex; justify-content: center; align-items: center; border: 6px solid #ffcc00; box-shadow: 0 10px 20px rgba(0,0,0,0.1);">
+            <span style="font-size: 100px;">🏆</span>
+        </div>
+
+        <button onclick="document.getElementById('profileHUD').style.display='none'" style="width: 50px; height: 50px; background: #333; color: white; border: none; border-radius: 50%; font-size: 24px; cursor: pointer;">✕</button>
+    </div>
+</div>
+<div id="tradeHUD" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: white; z-index: 2000; flex-direction: column; align-items: center; padding-top: 50px; font-family: sans-serif;">
+    <div style="text-align: center; width: 90%;">
+        <h2 id="tradeStatus">Wizard Exchange</h2>
+        <div id="tradeMenu">
+            <button id="btnHost" style="width: 220px; padding: 15px; margin: 10px; border-radius: 30px; border: none; background: #3498db; color: white; font-weight: bold;">HOST TRADE</button>
+            <input type="text" id="tradeCodeInput" placeholder="6-CHAR CODE" maxlength="6" style="display:block; margin: 10px auto; width: 180px; padding: 10px; text-align: center; border-radius: 10px; border: 1px solid #ccc;">
+            <button id="btnJoin" style="width: 220px; padding: 15px; margin: 10px; border-radius: 30px; border: none; background: #2ecc71; color: white; font-weight: bold;">JOIN TRADE</button>
+        </div>
+        <div id="tradeSelection" style="display:none;">
+            <div id="tradeWizardList" style="display: flex; overflow-x: auto; gap: 10px; padding: 15px;"></div>
+        </div>
+        <div id="tradeConfirmArea" style="display:none;">
+            <div style="display: flex; justify-content: space-around; padding: 20px; background: #eee; border-radius: 15px;">
+                <div><small>YOU</small><div id="myOffer" style="font-weight:bold;">?</div></div>
+                <div><small>THEM</small><div id="theirOffer" style="font-weight:bold;">Waiting...</div></div>
+            </div>
+            <button id="confirmTradeBtn" style="margin-top:20px; width: 80%; padding: 15px; border-radius: 30px; border: none; background: #ccc; color: white;" disabled>READY</button>
+        </div>
+        <div style="flex-basis: 100%; height: 30px;"></div>
+        <button onclick="document.getElementById('tradeHUD').style.display='none'" style="color: #999; text-decoration: underline; background:none; border:none; cursor:pointer;">Cancel</button>
+    </div>
+</div>
+<button id="tradeBtn" style="position:fixed; bottom:162px; right:31px; z-index:150; width:50px; height:50px; border:none; background:#3498db; color:white; font-weight:bold; border-radius:50%; cursor:pointer; font-size:20px;">🤝</button>
+<script>
+(function() {
+    let tTopic = null, pReady = false, mReady = false, mySelection = null, theirSelection = null;
+
+   
+
+    // --- INTERNET (MQTT) HANDSHAKE ---
+    function getTradeClient(cb) {
+        if (window.mqttClient && window.mqttClient.connected) return cb(window.mqttClient);
+        window.mqttClient = mqtt.connect("wss://broker.hivemq.com:8884/mqtt", { keepalive: 30 });
+        window.mqttClient.on('connect', () => cb(window.mqttClient));
+    }
+
+    document.getElementById('tradeBtn').onclick = () => {
+        document.getElementById('tradeHUD').style.display = 'flex';
+        pReady = false; mReady = false;
+        document.getElementById('tradeMenu').style.display = 'block';
+        document.getElementById('tradeSelection').style.display = 'none';
+        document.getElementById('tradeConfirmArea').style.display = 'none';
+    };
+
+    document.getElementById('btnHost').onclick = () => {
+        const code = Math.random().toString(36).substring(2, 8).toUpperCase();
+        document.getElementById('tradeStatus').innerText = "ROOM: " + code;
+        getTradeClient(c => initTrade(code, c));
+    };
+
+    document.getElementById('btnJoin').onclick = () => {
+        const code = document.getElementById('tradeCodeInput').value.toUpperCase();
+        if(code.length === 6) getTradeClient(c => initTrade(code, c));
+    };
+
+    function initTrade(code, client) {
+        tTopic = "wizard_planet/trade_v300/" + code;
+        client.subscribe(tTopic);
+        client.removeAllListeners('message');
+        
+        client.on('message', (topic, msg) => {
+            if (topic !== tTopic) return;
+            const data = JSON.parse(msg.toString());
+            if (data.sender === window.playerName) return;
+
+            if (data.type === "offer") {
+                theirSelection = data.wiz;
+                document.getElementById('theirOffer').innerText = data.wiz.name;
+                const b = document.getElementById('confirmTradeBtn');
+                b.disabled = false; b.style.background = "#3498db";
+            } else if (data.type === "confirm") {
+                pReady = true;
+                if (mReady) finalize();
+            }
+        });
+
+        document.getElementById('tradeMenu').style.display = 'none';
+        document.getElementById('tradeSelection').style.display = 'block';
+        
+        const list = document.getElementById('tradeWizardList');
+        list.innerHTML = "";
+        (window.inventory || []).forEach((wiz, idx) => {
+            if(wiz.id === "XP_TRACKER") return;
+            const div = document.createElement('div');
+            div.style = "min-width:100px; padding:10px; background:white; border:2px solid #3498db; border-radius:10px; cursor:pointer; color:black;";
+            div.innerHTML = `<b>${wiz.name}</b>`;
+            div.onclick = () => {
+                mySelection = { ...wiz, idx: idx };
+                document.getElementById('myOffer').innerText = wiz.name;
+                document.getElementById('tradeSelection').style.display = 'none';
+                document.getElementById('tradeConfirmArea').style.display = 'block';
+                client.publish(tTopic, JSON.stringify({ type:"offer", sender:window.playerName, wiz:wiz }));
+            };
+            list.appendChild(div);
+        });
+    }
+
+    document.getElementById('confirmTradeBtn').onclick = function() {
+        mReady = true;
+        this.style.background = "#2ecc71";
+        this.innerText = "READY!";
+        window.mqttClient.publish(tTopic, JSON.stringify({ type:"confirm", sender:window.playerName }));
+        if (pReady) finalize();
+    };
+
+    function finalize() {
+        window.inventory.splice(mySelection.idx, 1);
+        window.inventory.push(theirSelection);
+        if (typeof saveInventoryToFirebase === "function") saveInventoryToFirebase();
+        alert("TRADE SUCCESS!");
+        document.getElementById('tradeHUD').style.display = 'none';
+        if (typeof openInventory === "function") openInventory(); 
+    }
+})();
+</script>
+
+<div id="eggBtn" style="position: fixed; bottom: 220px; right: 20px; width: 60px; height: 60px; background: white; border-radius: 50%; display: flex; justify-content: center; align-items: center; cursor: pointer; box-shadow: 0 4px 15px rgba(0,0,0,0.3); z-index: 999; border: 4px solid #e0e0e0; font-size: 30px;">🥚</div>
+
+<div id="hatchOverlay" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:white; z-index:3000; flex-direction:column; align-items:center; justify-content:center; font-family:sans-serif;">
+    <div onclick="document.getElementById('hatchOverlay').style.display='none'" style="position:absolute; top:20px; right:20px; font-size:30px; cursor:pointer; color:#ccc;">✕</div>
+    <h1 id="hatchTitle" style="margin:0;">EGG INCUBATOR</h1>
+    <div id="eggGraphic" style="font-size:120px; margin:40px 0; transition: transform 0.1s;">🥚</div>
+    <div id="stepCounter" style="font-size:24px; font-weight:bold; color:#333;">0 / 200 STEPS</div>
+    <div style="width:200px; height:10px; background:#eee; border-radius:5px; margin-top:10px;">
+        <div id="eggProgress" style="width:0%; height:100%; background:#2ecc71; border-radius:5px; transition: width 0.3s;"></div>
+    </div>
+    <button id="claimBtn" style="display:none; margin-top:30px; padding:15px 40px; background:#2ecc71; color:white; border:none; border-radius:30px; font-weight:bold; font-size:18px;">CLAIM WIZARD</button>
+</div>
+
+<script>
+(function() {
+    window.eggSteps = 0; // Global so console can see it
+    const GOAL = 200;
+    let isHatched = false;
+
+    // 1. Initialize the timer outside the function
+let lastStepTime = 0;
+
+window.addStep = function() {
+    // 2. Cooldown Logic: Get current time
+    let now = Date.now();
+    
+    // 3. If less than 500ms has passed, stop here
+    if (now - lastStepTime < 500) return; 
+
+    // 4. Continue with existing logic
+    if (isHatched) return;
+    
+    // Set the goal (change this to 100 if it's Hatch Day!)
+    const GOAL = 200; 
+    
+    window.eggSteps++;
+    lastStepTime = now; // Update the timer to right now
+
+    // Update UI
+    const disp = document.getElementById('stepCounter');
+    const bar = document.getElementById('eggProgress');
+    if (disp) disp.innerText = window.eggSteps + " / " + GOAL + " STEPS";
+    if (bar) bar.style.width = Math.min((window.eggSteps / GOAL * 100), 100) + "%";
+    
+    // Visual shake
+    const egg = document.getElementById('eggGraphic');
+    if (egg) egg.style.transform = `rotate(${Math.random() * 20 - 10}deg)`;
+
+    // Hatch Trigger
+    if (window.eggSteps >= GOAL) {
+        if (typeof triggerHatch === "function") {
+            triggerHatch();
+        } else {
+            // Fallback if triggerHatch isn't a defined function yet
+            isHatched = true;
+            document.getElementById('eggGraphic').innerText = "✨🥚✨";
+            document.getElementById('hatchTitle').innerText = "READY TO HATCH!";
+            document.getElementById('claimBtn').style.display = 'block';
+        }
+    }
+};
+
+    function triggerHatch() {
+        isHatched = true;
+        document.getElementById('hatchTitle').innerText = "READY TO HATCH!";
+        document.getElementById('eggGraphic').innerText = "✨🥚✨";
+        document.getElementById('claimBtn').style.display = "block";
+    }
+
+    
+document.getElementById('claimBtn').onclick = function() {
+    // 1. Determine if Shiny (1/10 chance as requested)
+    const isShiny = Math.random() < 0.10;
+    
+    // 2. Generate Random IVs (Exactly like wild wizards)
+    const ivAtk = Math.floor(Math.random() * 11);
+    const ivDef = Math.floor(Math.random() * 11);
+    const ivSpd = Math.floor(Math.random() * 11);
+    const ivString = `${ivAtk}/${ivDef}/${ivSpd}`;
+
+    // 3. Create full Wizard Object with all required properties
+    const newWiz = { 
+        name: isShiny ? "✨ Shiny Hatchling" : "Hatchling", 
+        color: isShiny ? "white" : "black", // White is the 'shiny' color
+        type: "Hatched/Hatchling",           // String with '/' to prevent .split() error
+        date: new Date().toISOString().split('T')[0],
+        iv: ivString,                        // The property that was crashing your UI
+        level: 1,
+        id: "EGG_" + Date.now()              // Unique ID
+    };
+    
+    // 4. Update Inventory and Firebase
+    if (!window.inventory) window.inventory = [];
+    window.inventory.push(newWiz);
+    
+    if (typeof saveInventoryToFirebase === "function") saveInventoryToFirebase();
+    
+    alert(isShiny ? "You hatched a SHINY!" : "Hatched a new Hatchling!");
+
+    //refresh
+
+window.eggSteps = 0; // Reset steps to 0
+
+isHatched = false; // Allow steps to be added again
+
+
+// Reset UI Elements
+
+document.getElementById('hatchOverlay').style.display = 'none';
+
+document.getElementById('claimBtn').style.display = 'none';
+
+document.getElementById('eggGraphic').innerText = "🥚";
+
+document.getElementById('hatchTitle').innerText = "EGG INCUBATOR";
+
+document.getElementById('eggProgress').style.width = "0%";
+
+document.getElementById('stepCounter').innerText = "0 / 200 STEPS";    
+    // 6. Refresh Inventory UI
+    if (typeof openInventory === "function") openInventory();
+};
+    document.getElementById('eggBtn').onclick = () => {
+        document.getElementById('hatchOverlay').style.display = 'flex';
+    };
+
+    // Real Sensor
+    window.addEventListener('devicemotion', (e) => {
+        let a = e.accelerationIncludingGravity;
+        if(!a) return;
+        let accel = Math.sqrt(a.x*a.x + a.y*a.y + a.z*a.z);
+        if (accel > 15) window.addStep(); 
+    });
+})();
+</script>
+<script>
+(function(){document.body.insertAdjacentHTML('beforeend',`<div id="eventNoticePopup" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.85);z-index:10005;align-items:center;justify-content:center;font-family:sans-serif;pointer-events:all;"><div style="background:white;width:85%;max-width:400px;border-radius:25px;overflow:hidden;text-align:center;box-shadow:0 10px 30px rgba(0,0,0,0.5);"><div style="background:linear-gradient(135deg,#f39c12,#d35400);padding:40px 20px;color:white;"><h2 style="margin:0;font-size:24px;font-weight:900;letter-spacing:1px;">
+
+WIZARD FEST: IN-PERSON!
+
+</h2></div><div style="padding:30px;color:#34495e;"><p style="font-size:17px;line-height:1.6;margin-bottom:20px;"><b>
+
+WELCOME TO IN-PERSON WIZARD FEST: 2026!
+
+</b><br>
+
+CATCH THE EXCLUSIVE RECTANGLE POLYGON!
+
+</p><div style="background:#fef9e7;padding:15px;border-radius:15px;font-size:14px;color:#7d6608;border:1px solid #f9e79f;font-weight:bold;">
+
+JOIN WIZARD FEST 2026 NOW, IN JUNE 2026!
+
+</div></div><button id="closeEventBtn" style="width:80%;padding:15px;border:none;background:#e67e22;color:white;font-weight:900;font-size:18px;cursor:pointer;border-radius:50px;margin-bottom:25px;box-shadow:0 4px 0 #a04000;">LET'S GO!</button></div></div>`);var _ep=document.getElementById("eventNoticePopup"),_eb=document.getElementById("closeEventBtn"),_ls=document.getElementById("loginScreen");_eb.onclick=()=>_ep.style.display="none";var _evObs=new MutationObserver((m,o)=>{if(window.getComputedStyle(_ls).display==="none"){setTimeout(()=>{_ep.style.display="flex"},600);o.disconnect()}});if(_ls)_evObs.observe(_ls,{attributes:true,attributeFilter:['style']});})();</script>
+
+
+
+
+<script>
+(function() {
+    // 1. Replace the old Raid UI menu layout with the single BATTLE button
+    const raidUIContainer = document.getElementById("raidUIContainer");
+    if (raidUIContainer) {
+        raidUIContainer.innerHTML = `
+            <button id="battleBtn" style="background: linear-gradient(135deg, #ff4757, #ff6b81); color: white; border: 3px solid white; border-radius: 50px; padding: 12px 28px; font-weight: 900; text-transform: uppercase; letter-spacing: 1px; box-shadow: 0 4px 15px rgba(0,0,0,0.3); transition: transform 0.1s, filter 0.2s; cursor: pointer; font-family: sans-serif;">⚔️</button>
+        `;
+    }
+
+    // 2. Inject the custom Raid Room Modal/Menu with Polygon + Arena Background placeholders
+    const modalHTML = `
+        <div id="customRaidMenuModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 2000; justify-content: center; align-items: center; background-color: rgba(0,0,0,0.65); font-family: sans-serif;">
+            <div id="customRaidMenuContent" style="position: relative; width: 90%; max-width: 440px; height: 380px; border-radius: 25px; overflow: hidden; display: flex; flex-direction: column; align-items: center; justify-content: space-between; padding: 35px 25px; box-shadow: 0 12px 40px rgba(0,0,0,0.6); box-sizing: border-box; border: 4px solid rgba(255,255,255,0.2);
+                background-image: url('YOUR_POLYGON_IMAGE_URL'), url('https://wallup.net/wp-content/uploads/2016/05/02/274452-architecture-nature-trees-Sun-pillar-stone-Colosseum-Rome-Italy-capital-stairs-sunlight-path-field-grass-arena-arch-building-monuments.jpg');
+                background-size: 150px auto, cover; background-position: center 35%, center; background-repeat: no-repeat, no-repeat;">
+                
+                <button id="closeRaidMenuBtn" style="position: absolute; top: 15px; right: 15px; background: rgba(0,0,0,0.6); color: white; border: 2px solid white; border-radius: 50%; width: 35px; height: 35px; font-size: 16px; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; z-index: 10; transition: background 0.2s;">✕</button>
+                
+                <div style="text-align: center; width: 100%;">
+                    <h2 id="customRaidTitle" style="margin: 0; color: white; font-size: 28px; font-weight: 900; text-shadow: 0 3px 10px rgba(0,0,0,0.9); letter-spacing: 1px; text-transform: uppercase;">RAID HUB</h2>
+                    <p id="customRaidStatus" style="color: #e0e0e0; font-size: 13px; text-shadow: 0 2px 5px rgba(0,0,0,0.9); margin: 8px 0 0 0; font-weight: bold; background: rgba(0,0,0,0.4); padding: 5px 10px; border-radius: 10px; display: inline-block;">Ready to scan your location</p>
+                </div>
+                
+                <button id="customJoinRaidBtn" style="background: linear-gradient(135deg, #2ecc71, #27ae60); color: white; border: 3px solid white; border-radius: 50px; padding: 16px 45px; font-size: 18px; font-weight: 900; text-transform: uppercase; letter-spacing: 1.5px; box-shadow: 0 6px 20px rgba(46, 204, 113, 0.4); cursor: pointer; transition: transform 0.1s, filter 0.2s;">JOIN RAID</button>
+            </div>
+        </div>
+    `;
+    document.body.insertAdjacentHTML('beforeend', modalHTML);
+
+    // 3. Define Fallback Predefined Cities for Geolocation Matching
+    const DEF_CITIES = [{name:"Tokyo",lat:35.6762,lon:139.6503},{name:"Delhi",lat:28.6139,lon:77.209},{name:"Shanghai",lat:31.2304,lon:121.4737},{name:"Sao-Paulo",lat:-23.5505,lon:-46.6333},{name:"Mexico-City",lat:19.4326,lon:-99.1332},{name:"Cairo",lat:30.0444,lon:31.2357},{name:"Mumbai",lat:19.076,lon:72.8777},{name:"Beijing",lat:39.9042,lon:116.4074},{name:"Dhaka",lat:23.8103,lon:90.4125},{name:"Osaka",lat:34.6937,lon:135.5023},{name:"New-York",lat:40.7128,lon:-74.006},{name:"Karachi",lat:24.8607,lon:67.0011},{name:"Buenos-Aires",lat:-34.6037,lon:-58.3816},{name:"Chongqing",lat:29.5628,lon:106.5516},{name:"Istanbul",lat:41.0082,lon:28.9784},{name:"Kolkata",lat:22.5726,lon:88.3639},{name:"Manila",lat:14.5995,lon:120.9842},{name:"Lagos",lat:6.5244,lon:3.3792},{name:"Rio-de-Janeiro",lat:-22.9068,lon:-43.1729},{name:"Tianjin",lat:39.3434,lon:117.3616},{name:"Kinshasa",lat:-4.4419,lon:15.2663},{name:"Guangzhou",lat:23.1291,lon:113.2644},{name:"Los-Angeles",lat:34.0522,lon:-118.2437},{name:"Moscow",lat:55.7558,lon:37.6173},{name:"Shenzhen",lat:22.5431,lon:114.0579},{name:"Lahore",lat:31.5204,lon:74.3587},{name:"Bangalore",lat:12.9716,lon:77.5946},{name:"Paris",lat:48.8566,lon:2.3522},{name:"Bogota",lat:4.711,lon:-74.0721},{name:"Jakarta",lat:-6.2088,lon:106.8456},{name:"Chennai",lat:13.0827,lon:80.2707},{name:"Lima",lat:-12.0464,lon:-77.0428},{name:"Bangkok",lat:13.7563,lon:100.5018},{name:"Seoul",lat:37.5665,lon:126.978},{name:"Nagoya",lat:35.1814,lon:136.9066},{name:"Hyderabad",lat:17.385,lon:78.4867},{name:"London",lat:51.5074,lon:-0.1278},{name:"Tehran",lat:35.6892,lon:51.389},{name:"Chicago",lat:41.8781,lon:-87.6298},{name:"Chengdu",lat:30.5728,lon:104.0668},{name:"Nanjing",lat:32.0603,lon:118.7969},{name:"Wuhan",lat:30.5928,lon:114.3055},{name:"Ho-Chi-Minh",lat:10.8231,lon:106.6297},{name:"Luanda",lat:-8.839,lon:13.2894},{name:"Ahmedabad",lat:23.0225,lon:72.5714},{name:"Kuala-Lumpur",lat:3.139,lon:101.6869},{name:"Xi-an",lat:34.3416,lon:108.9398},{name:"Hong-Kong",lat:22.3193,lon:114.1694},{name:"Dongguan",lat:23.021,lon:113.7518},{name:"Hangzhou",lat:30.2741,lon:120.1551},{name:"Surat",lat:21.1702,lon:72.8311},{name:"Shenyang",lat:41.8057,lon:123.4315},{name:"Riyadh",lat:24.7136,lon:46.6753},{name:"Baghdad",lat:33.3152,lon:44.3661},{name:"Santiago",lat:-33.4489,lon:-70.6693},{name:"Surabaya",lat:-7.2575,lon:112.7521},{name:"Belo-Horizonte",lat:-19.9167,lon:-43.9345},{name:"Madrid",lat:40.4168,lon:-3.7038},{name:"Houston",lat:29.7604,lon:-95.3698},{name:"Dallas",lat:32.7767,lon:-96.797},{name:"Toronto",lat:43.6532,lon:-79.3832},{name:"Miami",lat:25.7617,lon:-80.1918},{name:"Pune",lat:18.5204,lon:73.8567},{name:"Singapore",lat:1.3521,lon:103.8198},{name:"Philadelphia",lat:39.9526,lon:-75.1652},{name:"Atlanta",lat:33.749,lon:-84.388},{name:"Fukuoka",lat:33.5902,lon:130.4017},{name:"Khartoum",lat:15.5007,lon:32.5599},{name:"Barcelona",lat:41.3851,lon:2.1734},{name:"Johannesburg",lat:-26.2041,lon:28.0473},{name:"Saint-Petersburg",lat:59.9343,lon:30.3351},{name:"Qingdao",lat:36.0671,lon:120.3826},{name:"Harbin",lat:45.8038,lon:126.5358},{name:"Yangon",lat:16.8661,lon:96.1951},{name:"Nairobi",lat:-1.2921,lon:36.8219},{name:"Giza",lat:30.0131,lon:31.2089},{name:"Washington",lat:38.9072,lon:-77.0369},{name:"Abidjan",lat:5.36                  ,lon:-4.0083},{name:"Alexandria",lat:31.2001,lon:29.9187},{name:"Guadalajara",lat:20.6597,lon:-103.3496},{name:"Ankara",lat:39.9334,lon:32.8597},{name:"Boston",lat:42.3601,lon:-71.0589},{name:"Chidambaram",lat:11.3985,lon:79.6954},{name:"Monterrey",lat:25.6866,lon:-100.3161},{name:"Frankfurt",lat:50.1109,lon:8.6821},{name:"Phoenix",lat:33.4484,lon:-112.074},{name:"Durban",lat:-29.8587,lon:31.0218},{name:"Porto-Aegre",lat:-30.0346,lon:-51.2177},{name:"Recife",lat:-8.0543,lon:-34.8813},{name:"Brasilia",lat:-15.7942,lon:-47.8822},{name:"Fortaleza",lat:-3.7319,lon:-38.5267},{name:"Medellin",lat:6.2442,lon:-75.5812},{name:"Sydney",lat:-33.8688,lon:151.2093},{name:"Melbourne",lat:-37.8136,lon:144.9631},{name:"Curitiba",lat:-25.4284,lon:-49.2733},{name:"Rome",lat:41.9028,lon:12.4964},{name:"Milan",lat:45.4642,lon:9.19},{name:"Naples",lat:40.8518,lon:14.2681},{name:"Berlin",lat:52.52,lon:13.405},{name:"Athens",lat:37.9838,lon:23.7275},{name:"Jeddah",lat:21.5433,lon:39.1728},{name:"Casablanca",lat:33.5731,lon:-7.5898},{name:"Cape-Town",lat:-33.9249,lon:18.4241},{name:"Dakar",lat:14.7167,lon:-17.4677},{name:"Accra",lat:5.6037,lon:-0.187},{name:"Kumasi",lat:6.6666,lon:-1.6163},{name:"Dar-es-Salaam",lat:-6.7924,lon:39.2083},{name:"Addis-Ababa",lat:9.0192,lon:38.7468},{name:"Mombasa",lat:-4.0547,lon:39.6636},{name:"Kano",lat:12.0022,lon:8.592},{name:"Ibadan",lat:7.3775,lon:3.947},{name:"Luoyang",lat:34.6201,lon:112.4539},{name:"Changsha",lat:28.2282,lon:112.9388},{name:"Fuzhou",lat:26.0745,lon:119.2965},{name:"Dalian",lat:38.914,lon:121.6147},{name:"Wuxi",lat:31.4912,lon:120.3119},{name:"Hefei",lat:31.8206,lon:117.2272},{name:"Ningbo",lat:29.8683,lon:121.544},{name:"Shijiazhuang",lat:38.0428,lon:114.5149},{name:"Suzhou",lat:31.299,lon:120.6196},{name:"Urumqi",lat:43.8256,lon:87.6168},{name:"Kunming",lat:25.0453,lon:102.7103},{name:"Changchun",lat:43.8171,lon:125.3235},{name:"Nanchang",lat:28.6833,lon:115.85},{name:"Yantai",lat:37.4638,lon:121.4479},{name:"Xiamen",lat:24.4798,lon:118.0894},{name:"Zhengzhou",lat:34.7466,lon:113.6253},{name:"Jinan",lat:36.6512,lon:117.1201},{name:"Taiyuan",lat:37.8735,lon:112.5627},{name:"Lanzhou",lat:36.0611,lon:103.8343},{name:"Guiyang",lat:26.6477,lon:106.6302},{name:"Wenzhou",lat:27.9943,lon:120.6993},{name:"Zibo",lat:36.8135,lon:118.0549},{name:"Tangshan",lat:39.6308,lon:118.1802},{name:"Haikou",lat:20.0174,lon:110.3492},{name:"Xuzhou",lat:34.2045,lon:117.2843},{name:"Huizhou",lat:23.1118,lon:114.4158},{name:"Weifang",lat:36.7069,lon:119.1558},{name:"Shantou",lat:23.3541,lon:116.6818},{name:"Yangzhou",lat:32.3942,lon:119.4128},{name:"Guanajuato",lat:21.019,lon:-101.2574},{name:"Puebla",lat:19.0414,lon:-98.2063},{name:"Tijuana",lat:32.5149,lon:-117.0382},{name:"Ciudad-Juarez",lat:31.6904,lon:-106.4245},{name:"Merida",lat:20.9674,lon:-89.5926},{name:"San-Luis-Potosi",lat:22.1565,lon:-100.9855},{name:"Hermosillo",lat:29.073,lon:-110.9559},{name:"Culiacan",lat:24.8091,lon:-107.394},{name:"Querandies",lat:-34.61,lon:-58.44},{name:"Rosario",lat:-32.9587,lon:-60.693},{name:"Mendoza",lat:-32.8895,lon:-68.8458},{name:"Cordoba",lat:-31.4201,lon:-64.1888},{name:"La-Plata",lat:-34.9215,lon:-57.9545},{name:"San-Miguel-de-Tucuman",lat:-26.8241,lon:-65.2226},{name:"Salta",lat:-24.7821,lon:-65.4232},{name:"Mar-del-Plata",lat:-38.0055,lon:-57.5426},{name:"Santa-Fe",lat:-31.6107,lon:-60.6973},{name:"San-Juan",lat:-31.5375,lon:-68.5364},{name:"Cali",lat:3.4516,lon:-76.532},{name:"Barranquilla",lat:10.9685,lon:-74.7813},{name:"Cartagena",lat:10.391,lon:-75.4794},{name:"Cucuta",lat:7.8939,lon:-72.5078},{name:"Bucaramanga",lat:7.1254,lon:-73.1198},{name:"Pereira",lat:4.8133,lon:-75.6961},{name:"Ibaque",lat:4.4389,lon:-75.2322},{name:"Santa-Marta",lat:11.2408,lon:-74.199},{name:"Manizales",lat:5.0689,lon:-75.5174},{name:"Caracas",lat:10.4806,lon:-66.9036},{name:"Maracaibo",lat:10.6427,lon:-71.6125},{name:"Valencia",lat:10.162,lon:-68.0077},{name:"Barquisimeto",lat:10.0678,lon:-69.3474},{name:"Maracay",lat:10.235,lon:-67.5911},{name:"Ciudad-Guayana",lat:8.2908,lon:-62.7093},{name:"San-Cristobal",lat:7.767,lon:-72.224},{name:"Maturin",lat:9.7457,lon:-63.1748},{name:"Quito",lat:-0.1807,lon:-78.4678},{name:"Guayaquil",lat:-2.1894,lon:-79.8891},{name:"Cuenca",lat:-2.9006,lon:-79.0045},{name:"Santo-Domingo",lat:18.4861,lon:-69.9312},{name:"Santiago-de-los-Caballeros",lat:19.4517,lon:-70.697},{name:"San-Pedro-de-Macoris",lat:18.4539,lon:-69.3082},{name:"La-Romana",lat:18.4273,lon:-68.9728},{name:"San-Juan-PR",lat:18.4655,lon:-66.1057},{name:"Bayamon",lat:18.3808,lon:-66.1632},{name:"Carolina",lat:18.3808,lon:-65.9574},{name:"Ponce",lat:18.0111,lon:-66.6143},{name:"Caguas",lat:18.2325,lon:-66.0353},{name:"Havana",lat:23.1136,lon:-82.3666},{name:"Santiago-de-Cuba",lat:20.0169,lon:-75.8302},{name:"Camaguey",lat:21.3857,lon:-77.916},{name:"Holguin",lat:20.8872,lon:-76.2631},{name:"Guantanamo",lat:20.1417,lon:-75.2092},{name:"Santa-Clara",lat:22.4069,lon:-79.9645},{name:"Port-au-Prince",lat:18.5392,lon:-72.335},{name:"Carrefour",lat:18.5333,lon:-72.4167},{name:"Delmas",lat:18.55,lon:-72.3},{name:"Cap-Haitien",lat:19.75,lon:-72.2},{name:"Gonaives",lat:19.45,lon:-72.6833},{name:"Kingston",lat:17.9714,lon:-76.7936},{name:"Spanish-Town",lat:17.9943,lon:-76.9547},{name:"Montego-Bay",lat:18.4714,lon:-77.919},{name:"San-Jose",lat:9.9281,lon:-84.0907},{name:"Alajuela",lat:10.0162,lon:-84.2141},{name:"Cartago",lat:9.8644,lon:-83.9234},{name:"Heredia",lat:9.9981,lon:-84.1166},{name:"Panama-City",lat:8.9833,lon:-79.5167},{name:"San-Miguelito",lat:9.0333,lon:-79.5},{name:"David",lat:8.4271,lon:-82.4308},{name:"Colon",lat:9.3544,lon:-79.9014},{name:"Tegucigalpa",lat:14.0723,lon:-87.1921},{name:"San-Pedro-Sula",lat:15.5149,lon:-88.0257},{name:"Choloma",lat:15.6167,lon:-87.95},{name:"La-Ceiba",lat:15.7597,lon:-86.7905},{name:"Managua",lat:12.115,lon:-86.2362},{name:"Leon",lat:12.4379,lon:-86.878},{name:"Masaya",lat:11.9744,lon:-86.0942},{name:"Chinandega",lat:12.6294,lon:-87.1293},{name:"San-Salvador",lat:13.6929,lon:-89.2182},{name:"Soyapango",lat:13.7153,lon:-89.1417},{name:"Santa-Ana",lat:13.9942,lon:-89.5597},{name:"San-Miguel",lat:13.4833,lon:-88.1833},{name:"Guatemala-City",lat:14.6349,lon:-90.5069},{name:"Mixco",lat:14.6328,lon:-90.6064},{name:"Villa-Nueva",lat:14.5269,lon:-90.5875},{name:"Quetzaltenango",lat:14.8347,lon:-91.5181},{name:"Belmopan",lat:17.251,lon:-88.7669},{name:"Belize-City",lat:17.5046,lon:-88.1962},{name:"San-Ignacio",lat:17.1588,lon:-89.0617},{name:"Seattle",lat:47.6062,lon:-122.3321},{name:"San-Francisco",lat:37.7749,lon:-122.4194},{name:"San-Diego",lat:32.7157,lon:-117.1611},{name:"San-Jose-CA",lat:37.3382,lon:-121.8863},{name:"Denver",lat:39.7392,lon:-104.9903},{name:"Las-Vegas",lat:36.1716,lon:-115.1391},{name:"Salt-Lake-City",lat:40.7608,lon:-111.891},{name:"Portland",lat:45.5152,lon:-122.6784},{name:"Sacramento",lat:38.5816,lon:-121.4944},{name:"Austin",lat:30.2672,lon:-97.7431},{name:"San-Antonio",lat:29.4241,lon:-98.4936},{name:"New-Orleans",lat:29.9511,lon:-90.0715},{name:"Orlando",lat:28.5383,lon:-81.3792},{name:"Tampa",lat:27.9506,lon:-82.4572},{name:"Charlotte",lat:35.2271,lon:-80.8431},{name:"Raleigh",lat:35.7796,lon:-78.6382},{name:"Nashville",lat:36.1627,lon:-86.7816},{name:"Memphis",lat:35.1495,lon:-90.049},{name:"Indianapolis",lat:39.7684,lon:-86.1581},{name:"Columbus",lat:39.9612,lon:-82.9988},{name:"Cleveland",lat:41.4993,lon:-81.6944},{name:"Cincinnati",lat:39.1031,lon:-84.512},{name:"Detroit",lat:42.3314,lon:-83.0458},{name:"Minneapolis",lat:44.9778,lon:-93.265},{name:"St-Louis",lat:38.627,lon:-90.1994},{name:"Kansas-City",lat:39.0997,lon:-94.5786},{name:"Pittsburgh",lat:40.4406,lon:-79.9959},{name:"Baltimore",lat:39.2904,lon:-76.6122},{name:"Buffalo",lat:42.8864,lon:-78.8784},{name:"Rochester",lat:43.1566,lon:-77.6088},{name:"Hartford",lat:41.7637,lon:-72.6851},{name:"Providence",lat:41.824,lon:-71.4128},{name:"Honolulu",lat:21.3069,lon:-157.8583},{name:"Anchorage",lat:61.2181,lon:-149.9003},{name:"Vancouver",lat:49.2827,lon:-123.1207},{name:"Calgary",lat:51.0447,lon:-114.0719},{name:"Edmonton",lat:53.5461,lon:-113.4938},{name:"Winnipeg",lat:49.8951,lon:-97.1384},{name:"Ottawa",lat:45.4215,lon:-75.6972},{name:"Montreal",lat:45.5017,lon:-73.5673},{name:"Quebec-City",lat:46.8139,lon:-71.2082},{name:"Halifax",lat:44.6488,lon:-63.5752},{name:"St-Johns",lat:47.5615,lon:-52.7126},{name:"Reykjavik",lat:64.1466,lon:-21.9426},{name:"Oslo",lat:59.9139,lon:10.7522},{name:"Bergen",lat:60.3913,lon:5.3221},{name:"Trondheim",lat:63.4305,lon:10.3951},{name:"Stavanger",lat:58.97,lon:5.7331},{name:"Stockholm",lat:59.3293,lon:18.0686},{name:"Gothenburg",lat:57.7089,lon:11.9746},{name:"Malmo",lat:55.605,lon:13.0038},{name:"Uppsala",lat:59.8586,lon:17.6389},{name:"Helsinki",lat:60.1699,lon:24.9384},{name:"Espoo",lat:60.2055,lon:24.6559},{name:"Tampere",lat:61.4978,lon:23.761},{name:"Vantaa",lat:60.2934,lon:25.0378},{name:"Turku",lat:60.4515,lon:22.2666},{name:"Oulu",lat:65.0124,lon:25.4682},{name:"Copenhagen",lat:55.6761,lon:12.5683},{name:"Aarhus",lat:56.1567,lon:10.2108},{name:"Odense",lat:55.4038,lon:10.4024},{name:"Tallinn",lat:59.437,lon:24.7536},{name:"Tartu",lat:58.378,lon:26.7285},{name:"Riga",lat:56.9496,lon:24.1052},{name:"Liepaja",lat:56.5047,lon:21.0108},{name:"Vilnius",lat:54.6872,lon:25.2797},{name:"Kaunas",lat:54.8985,lon:23.9036},{name:"Klaipeda",lat:55.7033,lon:21.1443},{name:"Minsk",lat:53.9045,lon:27.5615},{name:"Brest",lat:52.0977,lon:23.7341},{name:"Grodno",lat:53.6694,lon:23.8134},{name:"Gomel",lat:52.4345,lon:30.9754},{name:"Kyiv",lat:50.4501,lon:30.5234},{name:"Kharkiv",lat:49.9935,lon:36.2304},{name:"Odesa",lat:46.4825,lon:30.7233},{name:"Dnipro",lat:48.4647,lon:35.0462},{name:"Lviv",lat:49.8397,lon:24.0297},{name:"Warsaw",lat:52.2297,lon:21.0122},{name:"Krakow",lat:50.0647,lon:19.945},{name:"Lodz",lat:51.7592,lon:19.456},{name:"Wroclaw",lat:51.1079,lon:17.0385},{name:"Poznan",lat:52.4064,lon:16.9252},{name:"Gdansk",lat:54.352,lon:18.6466},{name:"Prague",lat:50.0755,lon:14.4378},{name:"Brno",lat:49.1951,lon:16.6068},{name:"Ostrava",lat:49.8209,lon:18.2625},{name:"Bratislava",lat:48.1486,lon:17.1077},{name:"Kosice",lat:48.7164,lon:21.2611},{name:"Budapest",lat:47.4979,lon:19.0402},{name:"Debrecen",lat:47.5316,lon:21.6273},{name:"Szeged",lat:46.253,lon:20.1414},{name:"Miskolc",lat:48.1035,lon:20.7784},{name:"Vienna",lat:48.2082,lon:16.3738},{name:"Graz",lat:47.0707,lon:15.4395},{name:"Linz",lat:48.3069,lon:14.2858},{name:"Salzburg",lat:47.8095,lon:13.055},{name:"Innsbruck",lat:47.2692,lon:11.4041},{name:"Zurich",lat:47.3769,lon:8.5417},{name:"Geneva",lat:46.2044,lon:6.1432},{name:"Basel",lat:47.5596,lon:7.5886},{name:"Bern",lat:46.948,lon:7.4474},{name:"Lausanne",lat:46.5197,lon:6.6323},{name:"Brussels",lat:50.8503,lon:4.3517},{name:"Antwerp",lat:51.2194,lon:4.4025},{name:"Ghent",lat:51.0543,lon:3.7174},{name:"Liege",lat:50.6326,lon:5.5797},{name:"Amsterdam",lat:52.3676,lon:4.9041},{name:"Rotterdam",lat:51.9244,lon:4.4777},{name:"The-Hague",lat:52.0705,lon:4.3007},{name:"Utrecht",lat:52.0907,lon:5.1214},{name:"Eindhoven",lat:51.4416,lon:5.4697},{name:"Luxembourg-City",lat:49.6116,lon:6.1319},{name:"Dublin",lat:53.3498,lon:-6.2603},{name:"Cork",lat:51.8985,lon:-8.4756},{name:"Galway",lat:53.2707,lon:-9.0568},{name:"Limerick",lat:52.6638,lon:-8.6268},{name:"Belfast",lat:54.5973,lon:-5.9301},{name:"Edinburgh",lat:55.9533,lon:-3.1883},{name:"Glasgow",lat:55.8642,lon:-4.2518},{name:"Manchester",lat:53.4808,lon:-2.2426},{name:"Birmingham",lat:52.4862,lon:-1.8904},{name:"Leeds",lat:53.8008,lon:-1.5491},{name:"Liverpool",lat:53.4084,lon:-2.9916},{name:"Newcastle",lat:54.9783,lon:-1.6178},{name:"Bristol",lat:51.4545,lon:-2.5879},{name:"Sheffield",lat:53.3811,lon:-1.4701},{name:"Munich",lat:48.1351,lon:11.582},{name:"Hamburg",lat:53.5511,lon:9.9937},{name:"Cologne",lat:50.9375,lon:6.9603},{name:"Stuttgart",lat:48.7758,lon:9.1829},{name:"Dusseldorf",lat:51.2277,lon:6.7735},{name:"Dortmund",lat:51.5136,lon:7.4653},{name:"Essen",lat:51.4556,lon:7.0116},{name:"Bremen",lat:53.0793,lon:8.8017},{name:"Leipzig",lat:51.3396,lon:12.3731},{name:"Dresden",lat:51.0504,lon:13.7373},{name:"Nuremberg",lat:49.4521,lon:11.0767},{name:"Hannover",lat:52.3759,lon:9.732},{name:"Duisburg",lat:51.4344,lon:6.7623},{name:"Bochum",lat:51.4818,lon:7.2162},{name:"Wuppertal",lat:51.2562,lon:7.1508},{name:"Bielefeld",lat:52.0204,lon:8.5322},{name:"Bonn",lat:50.7374,lon:7.0982},{name:"Muenster",lat:51.9607,lon:7.6261},{name:"Karlsruhe",lat:49.0069,lon:8.4037},{name:"Mannheim",lat:49.4875,lon:8.466},{name:"Augsburg",lat:48.3705,lon:10.8978},{name:"Wiesbaden",lat:50.0826,lon:8.2493},{name:"Gelsenkirchen",lat:51.5177,lon:7.0857},{name:"Moenchengladbach",lat:51.1854,lon:6.4417},{name:"Braunschweig",lat:52.2689,lon:10.5268},{name:"Chemnitz",lat:50.8278,lon:12.9214},{name:"Aachen",lat:50.7753,lon:6.0839},{name:"Kiel",lat:54.3233,lon:10.1228},{name:"Halle",lat:51.4828,lon:11.9698},{name:"Magdeburg",lat:52.1205,lon:11.6276},{name:"Freiburg",lat:47.999,lon:7.8421},{name:"Krefeld",lat:51.3389,lon:6.5647},{name:"Luebeck",lat:53.8655,lon:10.6866},{name:"Oberhausen",lat:51.4965,lon:6.8514},{name:"Erfurt",lat:50.9848,lon:11.0299},{name:"Mainz",lat:49.9929,lon:8.2473},{name:"Rostock",lat:54.0924,lon:12.0991},{name:"Kassel",lat:51.3127,lon:9.4797},{name:"Hagen",lat:51.3633,lon:7.4827},{name:"Hamm",lat:51.6744,lon:7.8153},{name:"Saarbruecken",lat:49.2402,lon:6.9969},{name:"Muelheim",lat:51.4271,lon:6.8824},{name:"Potsdam",lat:52.3906,lon:13.0645},{name:"Ludwigshafen",lat:49.4812,lon:8.4475},{name:"Oldenburg",lat:53.1439,lon:8.2139},{name:"Leverkusen",lat:51.0459,lon:6.9912},{name:"Osnabrueck",lat:52.2799,lon:8.0472},{name:"Solingen",lat:51.1712,lon:7.0856},{name:"Heidelberg",lat:49.3988,lon:8.6724},{name:"Herne",lat:51.5422,lon:7.2241},{name:"Neuss",lat:51.2003,lon:6.6933},{name:"Darmstadt",lat:49.8728,lon:8.6512},{name:"Paderborn",lat:51.7189,lon:8.7575},{name:"Regensburg",lat:49.0134,lon:12.1016},{name:"Ingolstadt",lat:48.7665,lon:11.4258},{name:"Wuerzburg",lat:49.7913,lon:9.9534},{name:"Wolfsburg",lat:52.4227,lon:10.7865},{name:"Offenbach",lat:50.0955,lon:8.7762},{name:"Ulm",lat:48.4011,lon:9.9876},{name:"Heilbronn",lat:49.1427,lon:9.2109},{name:"Pforzheim",lat:48.8955,lon:8.7052},{name:"Goettingen",lat:51.5413,lon:9.9158},{name:"Bottrop",lat:51.5232,lon:6.9253},{name:"Recklinghausen",lat:51.6146,lon:7.1979},{name:"Reutlingen",lat:48.4833,lon:9.2167},{name:"Koblenz",lat:50.3569,lon:7.589},{name:"Bremerhaven",lat:53.5396,lon:8.5806},{name:"Bergisch-Gladbach",lat:50.9917,lon:7.1278},{name:"Remscheid",lat:51.1799,lon:7.1944},{name:"Jena",lat:50.9271,lon:11.5892},{name:"Trier",lat:49.7499,lon:6.6371},{name:"Erlangen",lat:49.5897,lon:11.011},{name:"Moers",lat:51.4519,lon:6.6285},{name:"Siegen",lat:50.8744,lon:8.0243},{name:"Hildesheim",lat:52.1508,lon:9.9511},{name:"Cottbus",lat:51.7563,lon:14.3329},{name:"Salzgitter",lat:52.1503,lon:10.3593},{name:"Kaiserslautern",lat:49.4447,lon:7.7689},{name:"Witten",lat:51.4391,lon:7.3364},{name:"Gera",lat:50.8804,lon:12.0819},{name:"Schwerin",lat:53.6355,lon:11.4012},{name:"Ludwigsburg",lat:48.8975,lon:9.1917},{name:"Hanau",lat:50.132,lon:8.9171},{name:"Esslingen",lat:48.7406,lon:9.3065},{name:"Iserlohn",lat:51.3734,lon:7.6967},{name:"Dueren",lat:50.8042,lon:6.4833},{name:"Tuebingen",lat:48.5216,lon:9.0576},{name:"Flensburg",lat:54.7938,lon:9.4468},{name:"Zwickau",lat:50.7187,lon:12.492},{name:"Giessen",lat:50.5872,lon:8.6746},{name:"Ratingen",lat:51.2974,lon:6.8491},{name:"Luenen",lat:51.6149,lon:7.5222},{name:"Villingen-Schwenningen",lat:48.0601,lon:8.4587},{name:"Konstanz",lat:47.6603,lon:9.1758},{name:"Marl",lat:51.6481,lon:7.0945},{name:"Worms",lat:49.6341,lon:8.3626},{name:"Velbert",lat:51.3404,lon:7.0416},{name:"Minden",lat:52.2882,lon:8.9167},{name:"Neumuenster",lat:54.0714,lon:9.986},{name:"Norderstedt",lat:53.6946,lon:10.0104},{name:"Delmenhorst",lat:53.0506,lon:8.6312},{name:"Bamberg",lat:49.8988,lon:10.9001},{name:"Viersen",lat:51.2556,lon:6.3912},{name:"Marburg",lat:50.8091,lon:8.7709},{name:"Rheine",lat:52.2798,lon:7.4394},{name:"Wilhelmshaven",lat:53.5222,lon:8.1065},{name:"Gladbeck",lat:51.5721,lon:6.9859},{name:"Troisdorf",lat:50.8146,lon:7.1518},{name:"Dorsten",lat:51.6601,lon:6.9643},{name:"Bayreuth",lat:49.9456,lon:11.5713},{name:"Detmold",lat:51.9333,lon:8.8833},{name:"Arnsberg",lat:51.3961,lon:8.0646},{name:"Castrop-Rauxel",lat:51.5492,lon:7.3117},{name:"Luedenscheid",lat:51.2195,lon:7.6253},{name:"Landshut",lat:48.5367,lon:12.1523},{name:"Brandeburg-an-der-Havel",lat:52.4125,lon:12.5538},{name:"Bocholt",lat:51.8375,lon:6.6111},{name:"Aschaffenburg",lat:49.9765,lon:9.1437},{name:"Celle",lat:52.6256,lon:10.0825},{name:"Kempten",lat:47.7286,lon:10.3158},{name:"Fulda",lat:50.5523,lon:9.6775},{name:"Aalen",lat:48.8374,lon:10.0935},{name:"Lippstadt",lat:51.6729,lon:8.3444},{name:"Dinslaken",lat:51.5644,lon:6.7323},{name:"Kerpen",lat:50.8715,lon:6.696},{name:"Herford",lat:52.1152,lon:8.6695},{name:"Ruesselsheim",lat:49.9951,lon:8.4111},{name:"Weimar",lat:50.9803,lon:11.329},{name:"Sindelfingen",lat:48.7064,lon:9.0019},{name:"Neuwied",lat:50.4287,lon:7.4619},{name:"Plauen",lat:50.495,lon:12.1311},{name:"Neubrandenburg",lat:53.557,lon:13.2608},{name:"Dormagen",lat:51.0938,lon:6.8186},{name:"Grevenbroich",lat:51.0886,lon:6.5862},{name:"Herten",lat:51.5935,lon:7.1378},{name:"Bergheim",lat:50.9547,lon:6.6433},{name:"Schwabach",lat:49.3283,lon:11.0211},{name:"Garbsen",lat:52.4183,lon:9.5986},{name:"Wesel",lat:51.6577,lon:6.6192},{name:"Frankenthal",lat:49.5342,lon:8.3542},{name:"Hameln",lat:52.1031,lon:9.3601},{name:"Stralsund",lat:54.3037,lon:13.0818},{name:"Amberg",lat:49.4447,lon:11.8483},{name:"Lyon",lat:45.764,lon:4.8357},{name:"Marseille",lat:43.2965,lon:5.3698},{name:"Toulouse",lat:43.6047,lon:1.4442},{name:"Nice",lat:43.7102,lon:7.262},{name:"Nantes",lat:47.2184,lon:-1.5536},{name:"Strasbourg",lat:48.5734,lon:7.7521},{name:"Montpellier",lat:43.611,lon:3.8767},{name:"Bordeaux",lat:44.8378,lon:-0.5792},{name:"Lille",lat:50.6293,lon:3.0573},{name:"Rennes",lat:48.1173,lon:-1.6778},{name:"Reims",lat:49.2583,lon:4.0317},{name:"Le-Havre",lat:49.4944,lon:0.1079},{name:"Saint-Etienne",lat:45.4397,lon:4.3872},{name:"Toulon",lat:43.1242,lon:5.928},{name:"Grenoble",lat:45.1885,lon:5.7245},{name:"Dijon",lat:47.322,lon:5.0415},{name:"Angers",lat:47.4712,lon:-0.5518},{name:"Nimes",lat:43.8367,lon:4.3601},{name:"Villeurbanne",lat:45.7719,lon:4.8797},{name:"Le-Mans",lat:48.0061,lon:0.1996},{name:"Aix-en-Provence",lat:43.5297,lon:5.4474},{name:"Brest-FR",lat:48.3903,lon:-4.4861},{name:"Limoges",lat:45.8336,lon:1.2611},{name:"Tours",lat:47.3941,lon:0.6848},{name:"Amiens",lat:49.8942,lon:2.2957},{name:"Perpignan",lat:42.6887,lon:2.8948},{name:"Metz",lat:49.1193,lon:6.1757},{name:"Boulogne-Billancourt",lat:48.8353,lon:2.2407},{name:"Besancon",lat:47.2378,lon:6.0241},{name:"Orleans",lat:47.903,lon:1.9088},{name:"Rouen",lat:49.4432,lon:1.0999},{name:"Mulhouse",lat:47.7508,lon:7.3359},{name:"Caen",lat:49.1829,lon:-0.3707},{name:"Nancy",lat:48.6921,lon:6.1844},{name:"Saint-Denis",lat:48.9362,lon:2.3574},{name:"Argenteuil",lat:48.9478,lon:2.2483},{name:"Dominica-Roseau",lat:15.3013,lon:-61.3884},{name:"St-Lucia-Castries",lat:14.0101,lon:-60.9875},{name:"Barbados-Bridgetown",lat:13.106,lon:-59.6132},{name:"St-Vincent-Kingstown",lat:13.1583,lon:-61.225},{name:"Grenada-St-Georges",lat:12.0564,lon:-61.7485},{name:"Trinidad-Port-of-Spain",lat:10.6667,lon:-61.5167},{name:"San-Fernando",lat:10.2833,lon:-61.4667},{name:"Chaguanas",lat:10.5167,lon:-61.4167},{name:"Georgetown",lat:6.8045,lon:-58.1553},{name:"Linden",lat:6.0053,lon:-58.3075},{name:"New-Amsterdam",lat:6.2483,lon:-57.5161},{name:"Paramaribo",lat:5.8633,lon:-55.1683},{name:"Lelydorp",lat:5.6967,lon:-55.2289},{name:"Nieuw-Nickerie",lat:5.9417,lon:-56.9856},{name:"Cayenne",lat:4.9333,lon:-52.3333},{name:"Kourou",lat:5.1611,lon:-52.6467},{name:"Saint-Laurent-du-Maroni",lat:5.5014,lon:-54.0294},{name:"Zanzibar-City",lat:-6.165,lon:39.199},{name:"Arusha",lat:-3.3732,lon:36.686},{name:"Mwanza",lat:-2.5167,lon:32.9},{name:"Dodoma",lat:-6.1731,lon:35.7419},{name:"Kampala",lat:0.3476,lon:32.5825},{name:"Entebbe",lat:0.0514,lon:32.4637},{name:"Gulu",lat:2.772,lon:32.2881},{name:"Lira",lat:2.235,lon:32.9097},{name:"Kigali",lat:-1.9403,lon:30.0596},{name:"Butare",lat:-2.6,lon:29.74},{name:"Gisenyi",lat:-1.7028,lon:29.2564},{name:"Bujumbura",lat:-3.3822,lon:29.3644},{name:"Gitega",lat:-3.4278,lon:29.9308},{name:"Ngozi",lat:-2.9075,lon:29.8306},{name:"Lusaka",lat:-15.4167,lon:28.2833},{name:"Kitwe",lat:-12.8024,lon:28.2132},{name:"Ndola",lat:-12.9667,lon:28.6333},{name:"Livingstone",lat:-17.8444,lon:25.8569},{name:"Lilongwe",lat:-13.9669,lon:33.7741},{name:"Blantyre",lat:-15.7861,lon:35.0058},{name:"Zomba",lat:-15.3833,lon:35.3333},{name:"Maputo",lat:-25.9653,lon:32.5892},{name:"Matola",lat:-25.9622,lon:32.4589},{name:"Beira",lat:-19.8436,lon:34.8722},{name:"Nampula",lat:-15.1165,lon:39.2662},{name:"Harare",lat:-17.8292,lon:31.0522},{name:"Bulawayo",lat:-20.15,lon:28.5833},{name:"Chitungwiza",lat:-18.0125,lon:31.0806},{name:"Gaborone",lat:-24.658,lon:25.912},{name:"Francistown",lat:-21.1667,lon:27.5167},{name:"Molepolole",lat:-24.4103,lon:25.5036},{name:"Windhoek",lat:-22.5609,lon:17.0658},{name:"Walvis-Bay",lat:-22.9575,lon:14.5053},{name:"Swakopmund",lat:-22.6833,lon:14.5333},{name:"Maseru",lat:-29.3167,lon:27.4833},{name:"Teyateyaneng",lat:-29.15,lon:27.75},{name:"Mafeteng",lat:-29.8167,lon:27.2333},{name:"Mbabane",lat:-26.3167,lon:31.1333},{name:"Manzini",lat:-26.4917,lon:31.3783},{name:"Antananarivo",lat:-18.8792,lon:47.5079},{name:"Toamasina",lat:-18.1492,lon:49.4023},{name:"Antsirabe",lat:-19.8659,lon:47.0333},{name:"Mahajanga",lat:-15.7167,lon:46.3167},{name:"Port-Louis",lat:-20.1606,lon:57.5012},{name:"Beau-Bassin",lat:-20.2225,lon:57.4722},{name:"Vacoas-Phoenix",lat:-20.2975,lon:57.4983},{name:"Saint-Denis-RE",lat:-20.8823,lon:55.4507},{name:"Saint-Paul",lat:-21.0094,lon:55.2706},{name:"Mamoudzou",lat:-12.7814,lon:45.2281},{name:"Moroni",lat:-11.7022,lon:43.2553},{name:"Mutsamudu",lat:-12.1692,lon:44.4022},{name:"Victoria-Seychelles",lat:-4.62,lon:55.45},{name:"Praia",lat:14.9315,lon:-23.5125},{name:"Mindelo",lat:16.8901,lon:-24.9804},{name:"Bissau",lat:11.8632,lon:-15.5983},{name:"Bafata",lat:12.1667,lon:-14.6667},{name:"Conakry",lat:9.537,lon:-13.6773},{name:"Nzerekore",lat:7.7562,lon:-8.8179},{name:"Kankan",lat:10.3844,lon:-9.3057},{name:"Freetown",lat:8.484,lon:-13.2299},{name:"Bo",lat:7.9633,lon:-11.7383},{name:"Kenema",lat:7.8767,lon:-11.1875},{name:"Monrovia",lat:6.3005,lon:-10.7969},{name:"Gbarnga",lat:6.9975,lon:-9.4717},{name:"Kakata",lat:6.5311,lon:-10.3536},{name:"San-Pedro-CI",lat:4.7485,lon:-6.6363},{name:"Bouake",lat:7.6931,lon:-5.0303},{name:"Yamoussoukro",lat:6.8161,lon:-5.2743},{name:"Bamako",lat:12.6392,lon:-8.0029},{name:"Sikasso",lat:11.3175,lon:-5.6667},{name:"Mopti",lat:14.4958,lon:-4.183},{name:"Ouagadougou",lat:12.3714,lon:-1.5197},{name:"Bobo-Dioulasso",lat:11.1772,lon:-4.2975},{name:"Koudougou",lat:12.25,lon:-2.3667},{name:"Niamey",lat:13.5126,lon:2.1126},{name:"Maradi",lat:13.5,lon:7.1},{name:"Zinder",lat:13.8072,lon:8.9881},{name:"N-Djamena",lat:12.1131,lon:15.0491},{name:"Moundou",lat:8.5667,lon:16.0833},{name:"Sarh",lat:9.1424,lon:18.3923},{name:"Bangui",lat:4.3733,lon:18.5628},{name:"Bimbo",lat:4.2567,lon:18.4158},{name:"Berberati",lat:4.2612,lon:15.7922},{name:"Yaounde",lat:3.848,lon:11.5021},{name:"Douala",lat:4.0511,lon:9.7679},{name:"Garoua",lat:9.3,lon:13.4},{name:"Malabo",lat:3.75,lon:8.7833},{name:"Bata",lat:1.8636,lon:9.7658},{name:"Sao-Tome",lat:0.3302,lon:6.7273},{name:"Libreville",lat:0.4162,lon:9.4673},{name:"Port-Gentil",lat:-0.7167,lon:8.7833},{name:"Franceville",lat:-1.6333,lon:13.5833},{name:"Brazzaville",lat:-4.2661,lon:15.2832},{name:"Pointe-Noire",lat:-4.7975,lon:11.8503},{name:"Dolisie",lat:-4.2,lon:12.6667},{name:"Lubumbashi",lat:-11.6609,lon:27.4794},{name:"Mbuji-Mayi",lat:-6.1333,lon:23.6},{name:"Kisangani",lat:0.5153,lon:25.1909},{name:"Goma",lat:-1.6742,lon:29.2285},{name:"Bukavu",lat:-2.5083,lon:28.8625},{name:"Luanda-AO",lat:-8.839,lon:13.2894},{name:"Huambo",lat:-12.7761,lon:15.7392},{name:"Lobito",lat:-12.35,lon:13.5333},{name:"Kigali-RW",lat:-1.9403,lon:30.0596},{name:"Asmara",lat:15.3333,lon:38.9333},{name:"Keren",lat:15.7747,lon:38.4553},{name:"Massawa",lat:15.6097,lon:39.4501},{name:"Djibouti-City",lat:11.588,lon:43.145},{name:"Ali-Sabieh",lat:11.1558,lon:42.7125},{name:"Mogadishu",lat:2.0408,lon:45.3426},{name:"Hargeisa",lat:9.5624,lon:44.077},{name:"Kismayo",lat:-0.3582,lon:42.5454},{name:"Lisbon",lat:38.7223,lon:-9.1393},{name:"Porto",lat:41.1579,lon:-8.6291},{name:"Vila-Nova-de-Gaia",lat:41.1239,lon:-8.6111},{name:"Amadora",lat:38.7597,lon:-9.2244},{name:"Braga",lat:41.5503,lon:-8.4201},{name:"Funchal",lat:32.6667,lon:-16.9167},{name:"Seville",lat:37.3891,lon:-5.9845},{name:"Valencia-ES",lat:39.4699,lon:-0.3763},{name:"Zaragoza",lat:41.6488,lon:-0.8891},{name:"Malaga",lat:36.7213,lon:-4.4214},{name:"Murcia",lat:37.9922,lon:-1.1307},{name:"Palma-de-Mallorca",lat:39.5696,lon:2.6502},{name:"Las-Palmas",lat:28.1235,lon:-15.4363},{name:"Bilbao",lat:43.263,lon:-2.935},{name:"Alicante",lat:38.346,lon:-0.4907},{name:"Cordoba-ES",lat:37.8882,lon:-4.7794},{name:"Valladolid",lat:41.6523,lon:-4.7286},{name:"Vigo",lat:42.2406,lon:-8.7207},{name:"Gijon",lat:43.5357,lon:-5.6615},{name:"A-Coruna",lat:43.3623,lon:-8.4115},{name:"Granada",lat:37.1773,lon:-3.5986},{name:"Vitoria-Gasteiz",lat:42.8467,lon:-2.6716},{name:"Oviedo",lat:43.3603,lon:-5.8448},{name:"Santa-Cruz-de-Tenerife",lat:28.4636,lon:-16.2518},{name:"Pamplona",lat:42.8125,lon:-1.6458},{name:"Almeria",lat:36.834,lon:-2.4637},{name:"San-Sebastian",lat:43.3183,lon:-1.9812},{name:"Burgos",lat:42.344,lon:-3.6969},{name:"Santander",lat:43.4623,lon:-3.8099},{name:"Castellon-de-la-Plana",lat:39.9864,lon:-0.0513},{name:"Albacete",lat:38.9943,lon:-1.8585},{name:"Logrono",lat:42.465,lon:-2.4455},{name:"Badajoz",lat:38.8779,lon:-6.9706},{name:"Salamanca",lat:40.9701,lon:-5.6635},{name:"Huelva",lat:37.2614,lon:-6.9447},{name:"Marbella",lat:36.5099,lon:-4.8864},{name:"Lleida",lat:41.6176,lon:0.6201},{name:"Tarragona",lat:41.1187,lon:1.2445},{name:"Cadiz",lat:36.5271,lon:-6.2886},{name:"Jaen",lat:37.7796,lon:-3.7849},{name:"Ourense",lat:42.3358,lon:-7.8639},{name:"Girona",lat:41.9794,lon:2.8214},{name:"Santiago-de-Compostela",lat:42.8782,lon:-8.5448},{name:"Caceres",lat:39.4753,lon:-6.3724},{name:"Melilla",lat:35.2923,lon:-2.9381},{name:"Ceuta",lat:35.8894,lon:-5.3198},{name:"Toledo",lat:39.8628,lon:-4.0273},{name:"Guadalajara-ES",lat:40.6332,lon:-3.167},{name:"Pontevedra",lat:42.431,lon:-8.6444},{name:"Palencia",lat:42.0096,lon:-4.5284},{name:"Ciudad-Real",lat:38.9848,lon:-3.9274},{name:"Zamora",lat:41.5032,lon:-5.7447},{name:"Avila",lat:40.6565,lon:-4.6814},{name:"Cuenca-ES",lat:40.0704,lon:-2.1374},{name:"Huesca",lat:42.1362,lon:-0.4085},{name:"Segovia",lat:40.9429,lon:-4.1088},{name:"Soria",lat:41.7636,lon:-2.4649},{name:"Teruel",lat:40.3456,lon:-1.1065},{name:"Andorra-la-Vella",lat:42.5063,lon:1.5218},{name:"Monaco",lat:43.7384,lon:7.4246},{name:"San-Marino",lat:43.9424,lon:12.4578},{name:"Vatican-City",lat:41.9029,lon:12.4534},{name:"Gibraltar",lat:36.1408,lon:-5.3536},{name:"Palermo",lat:38.1157,lon:13.3614},{name:"Genoa",lat:44.4056,lon:8.9463},{name:"Bologna",lat:44.4949,lon:11.3426},{name:"Florence",lat:43.7696,lon:11.2558},{name:"Bari",lat:41.1171,lon:16.8719},{name:"Catania",lat:37.5025,lon:15.0873},{name:"Venice",lat:45.4408,lon:12.3155},{name:"Verona",lat:45.4384,lon:10.9916},{name:"Messina",lat:38.1938,lon:15.554},{name:"Padua",lat:45.4064,lon:11.8768},{name:"Trieste",lat:45.6495,lon:13.7768},{name:"Brescia",lat:45.5416,lon:10.2118},{name:"Taranto",lat:40.4644,lon:17.247},{name:"Prato",lat:43.8777,lon:11.1022},{name:"Reggio-Calabria",lat:38.1144,lon:15.65},{name:"Modena",lat:44.6471,lon:10.9252},{name:"Parma",lat:44.8015,lon:10.3279},{name:"Perugia",lat:43.1107,lon:12.3908},{name:"Livorno",lat:43.5485,lon:10.3106},{name:"Ravenna",lat:44.4184,lon:12.2035},{name:"Cagliari",lat:39.2238,lon:9.1217},{name:"Foggia",lat:41.4622,lon:15.5446},{name:"Rimini",lat:44.0575,lon:12.5653},{name:"Salerno",lat:40.6785,lon:14.7594},{name:"Ferrara",lat:44.8381,lon:11.6198},{name:"Sassari",lat:40.7259,lon:8.5556},{name:"Latina",lat:41.4676,lon:12.9037},{name:"Monza",lat:45.5845,lon:9.2744},{name:"Siracusa",lat:37.0755,lon:15.2866},{name:"Pescara",lat:42.4618,lon:14.2142},{name:"Bergamo",lat:45.6983,lon:9.6773},{name:"Forli",lat:44.2227,lon:12.0407},{name:"Trento",lat:46.0748,lon:11.1217},{name:"Vicenza",lat:45.5455,lon:11.5497},{name:"Terni",lat:42.5638,lon:12.6414},{name:"Bolzano",lat:46.4908,lon:11.3548},{name:"Novara",lat:45.4468,lon:8.6211},{name:"Piacenza",lat:45.0526,lon:9.693},{name:"Ancona",lat:43.6158,lon:13.5186},{name:"Andria",lat:41.2314,lon:16.2957},{name:"Udine",lat:46.0711,lon:13.2346},{name:"Arezzo",lat:43.4628,lon:11.8797},{name:"Cesena",lat:44.1394,lon:12.2435},{name:"Lecce",lat:40.3515,lon:18.1751},{name:"Barletta",lat:41.3188,lon:16.2764},{name:"Alessandria-IT",lat:44.913,lon:8.6151},{name:"Pesaro",lat:43.91,lon:12.9133},{name:"Brindisi",lat:40.6327,lon:17.9417},{name:"Catanzaro",lat:38.9054,lon:16.5948},{name:"Pistoia",lat:43.9312,lon:10.9176},{name:"Pisa",lat:43.7228,lon:10.4017},{name:"Lucca",lat:43.8429,lon:10.5027},{name:"Grosseto",lat:42.7663,lon:11.1105},{name:"Como",lat:45.8081,lon:9.0852},{name:"Treviso",lat:45.6669,lon:12.2431},{name:"Marsala",lat:37.7966,lon:12.4364},{name:"Varese",lat:45.8193,lon:8.825},{name:"Asti",lat:44.9014,lon:8.2069},{name:"Caserta",lat:41.0739,lon:14.3338},{name:"Gela",lat:37.0668,lon:14.2505},{name:"Siena",lat:43.3186,lon:11.3305},{name:"Cremona",lat:45.1333,lon:10.0333},{name:"Pavia",lat:45.185,lon:9.155},{name:"Massa",lat:44.0355,lon:10.1417},{name:"Imola",lat:44.3534,lon:11.7145},{name:"Carpi",lat:44.7836,lon:10.8794},{name:"Carrara",lat:44.0793,lon:10.0974},{name:"Viterbo",lat:42.4173,lon:12.1047},{name:"Potenza",lat:40.6384,lon:15.8021},{name:"Castellammare-di-Stabia",lat:40.6957,lon:14.4842},{name:"Afragola",lat:40.9181,lon:14.3072},{name:"Crotone",lat:39.0807,lon:17.1276},{name:"Vigevano",lat:45.3164,lon:8.8617},{name:"Cosenza",lat:39.2983,lon:16.2536},{name:"Savona",lat:44.3079,lon:8.4811},{name:"Matera",lat:40.6664,lon:16.6043},{name:"Caltanissetta",lat:37.4901,lon:14.062},{name:"Benevento",lat:41.1307,lon:14.7786},{name:"Molfetta",lat:41.201,lon:16.5975},{name:"Viareggio",lat:43.8695,lon:10.2512},{name:"Biella",lat:45.563,lon:8.0579},{name:"Lecco",lat:45.8566,lon:9.3971},{name:"Chieti",lat:42.351,lon:14.167},{name:"Sanremo",lat:43.816,lon:7.7738},{name:"Rotterdam-NL",lat:51.9244,lon:4.4777},{name:"The-Hague-NL",lat:52.0705,lon:4.3007},{name:"Groningen",lat:53.2194,lon:6.5665},{name:"Tilburg",lat:51.5555,lon:5.0913},{name:"Almere",lat:52.3702,lon:5.2141},{name:"Breda",lat:51.5719,lon:4.7683},{name:"Nijmegen",lat:51.8126,lon:5.8372},{name:"Apeldoorn",lat:52.2112,lon:5.9699},{name:"Enschede",lat:52.2215,lon:6.8937},{name:"Haarlem",lat:52.3874,lon:4.6462},{name:"Arnhem",lat:51.9851,lon:5.8987},{name:"Amersfoort",lat:52.1561,lon:5.3878},{name:"Zaanstad",lat:52.4419,lon:4.8423},{name:"Den-Bosch",lat:51.6978,lon:5.3037},{name:"Haarlemmermeer",lat:52.3023,lon:4.6853},{name:"Zwolle",lat:52.5168,lon:6.083},{name:"Zoetermeer",lat:52.0607,lon:4.494},{name:"Leiden",lat:52.1601,lon:4.497},{name:"Maastricht",lat:50.8514,lon:5.691},{name:"Dordrecht",lat:51.8133,lon:4.6901},{name:"Ede",lat:52.0435,lon:5.6699},{name:"Alphen-aan-den-Rijn",lat:52.1293,lon:4.6631},{name:"Leeuwarden",lat:53.2012,lon:5.7999},{name:"Alkmaar",lat:52.6324,lon:4.7534},{name:"Emmen",lat:52.7858,lon:6.8976},{name:"Delft",lat:52.0116,lon:4.3571},{name:"Venlo",lat:51.3704,lon:6.1724},{name:"Deventer",lat:52.2562,lon:6.1604},{name:"Sittard-Geleen",lat:51.0183,lon:5.8384},{name:"Helmond",lat:51.4793,lon:5.657},{name:"Heerlen",lat:50.8882,lon:5.9795},{name:"Hilversum",lat:52.2238,lon:5.176},{name:"Oss",lat:51.7694,lon:5.5181},{name:"Amstelveen",lat:52.3024,lon:4.8601},{name:"Shengjin",lat:41.8136,lon:19.5939},{name:"Durres",lat:41.3236,lon:19.4553},{name:"Vlore",lat:40.4667,lon:19.49},{name:"Elbasan",lat:41.1125,lon:20.0822},{name:"Shkoder",lat:42.0681,lon:19.5119},{name:"Korce",lat:40.6158,lon:20.7778},{name:"Fier",lat:40.7239,lon:19.5561},{name:"Gjirokaster",lat:40.0758,lon:20.1389},{name:"Sarande",lat:39.8756,lon:20.0053},{name:"Berat",lat:40.7058,lon:19.9522},{name:"Lushnje",lat:40.9419,lon:19.7028},{name:"Kavaje",lat:41.1856,lon:19.5569},{name:"Pristina",lat:42.6629,lon:21.1655},{name:"Prizren",lat:42.2153,lon:20.7415},{name:"Gjilan",lat:42.4689,lon:21.4633},{name:"Peja",lat:42.6591,lon:20.2883},{name:"Mitrovica",lat:42.8914,lon:20.8661},{name:"Ferizaj",lat:42.3706,lon:21.1553},{name:"Gjakova",lat:42.3803,lon:20.4308},{name:"Podgorica",lat:42.4304,lon:19.2594},{name:"Niksic",lat:42.7801,lon:18.9448},{name:"Pljevlja",lat:43.3563,lon:19.3584},{name:"Bar-Montenegro",lat:42.1002,lon:19.1003},{name:"Budva",lat:42.2911,lon:18.8403},{name:"Herceg-Novi",lat:42.4572,lon:18.5315},{name:"Cetinje",lat:42.3931,lon:18.9116},{name:"Sarajevo",lat:43.8563,lon:18.4131},{name:"Banja-Luka",lat:44.7722,lon:17.191},{name:"Tuzla",lat:44.5384,lon:18.6671},{name:"Zenica",lat:44.2016,lon:17.904},{name:"Mostar",lat:43.3438,lon:17.8078},{name:"Bijeljina",lat:44.7579,lon:19.2144},{name:"Brcko",lat:44.8725,lon:18.8083},{name:"Doboj",lat:44.7333,lon:18.0833},{name:"Prijedor",lat:44.9806,lon:16.7133},{name:"Trebinje",lat:42.7119,lon:18.3436},{name:"Skopje",lat:41.9973,lon:21.428},{name:"Bitola",lat:41.0311,lon:21.3403},{name:"Kumanovo",lat:42.1322,lon:21.7144},{name:"Prilep",lat:41.3461,lon:21.5542},{name:"Tetovo",lat:42.0106,lon:20.9714},{name:"Ohrid",lat:41.1172,lon:20.8016},{name:"Veles",lat:41.7153,lon:21.7756},{name:"Strumica",lat:41.4378,lon:22.6433},{name:"Gostivar",lat:41.7961,lon:20.9083},{name:"Sttip",lat:41.7458,lon:22.1994},{name:"Sofia",lat:42.6977,lon:23.3219},{name:"Plovdiv",lat:42.1354,lon:24.7453},{name:"Varna",lat:43.2141,lon:27.9147},{name:"Burgas",lat:42.5048,lon:27.4626},{name:"Ruse",lat:43.8356,lon:25.9657},{name:"Stara-Zagora",lat:42.4258,lon:25.6345},{name:"Pleven",lat:43.417,lon:24.6067},{name:"Sliven",lat:42.6817,lon:26.3229},{name:"Dobrich",lat:43.5667,lon:27.8333},{name:"Shumen",lat:43.2712,lon:26.9369},{name:"Pernik",lat:42.6052,lon:23.0306},{name:"Khaskovo",lat:41.9344,lon:25.5556},{name:"Yambol",lat:42.4842,lon:26.5035},{name:"Blagoevgrad",lat:42.0209,lon:23.0943},{name:"Veliko-Tarnovo",lat:43.0757,lon:25.6173},{name:"Gabrovo",lat:42.8742,lon:25.3186},{name:"Vratsa",lat:43.2102,lon:23.5529},{name:"Kazanlak",lat:42.62,lon:25.3933},{name:"Vidin",lat:43.99,lon:22.8725},{name:"Asenovgrad",lat:42.0119,lon:24.8775},{name:"Kyustendil",lat:42.2839,lon:22.6911},{name:"Montana",lat:43.4125,lon:23.225},{name:"Kardzhali",lat:41.6414,lon:25.3672},{name:"Dimitrovgrad",lat:42.0544,lon:25.5908},{name:"Lovech",lat:43.1372,lon:24.7153},{name:"Silistra",lat:44.1147,lon:27.2614},{name:"Targovishte",lat:43.2536,lon:26.5703},{name:"Razgrad",lat:43.5264,lon:26.5244},{name:"Dupnitsa",lat:42.2644,lon:23.1172},{name:"Gorna-Oryahovitsa",lat:43.1278,lon:25.7003},{name:"Smolyan",lat:41.5747,lon:24.6917},{name:"Petrich",lat:41.3975,lon:23.2075},{name:"Samokov",lat:42.3381,lon:23.5594},{name:"Sandanski",lat:41.5647,lon:23.2803},{name:"Lom",lat:43.8242,lon:23.2372},{name:"Svishtov",lat:43.6186,lon:25.3453},{name:"Karlovo",lat:42.6419,lon:24.8058},{name:"Nova-Zagora",lat:42.4925,lon:26.0125},{name:"Sevlievo",lat:43.0264,lon:25.1114},{name:"Chirpan",lat:42.2036,lon:25.3267},{name:"Radomir",lat:42.5447,lon:22.9564},{name:"Botevgrad",lat:42.9078,lon:23.7919},{name:"Gotse-Delchev",lat:41.5714,lon:23.7297},{name:"Troyan",lat:42.8944,lon:24.7117},{name:"Aytos",lat:42.7022,lon:27.2514},{name:"Karnobat",lat:42.6492,lon:26.9856},{name:"Peshtera",lat:42.0333,lon:24.3},{name:"Popovo",lat:43.3486,lon:26.2306},{name:"Chepelare",lat:41.7294,lon:24.6861},{name:"Bansko",lat:41.8383,lon:23.4883},{name:"Nessebar",lat:42.6592,lon:27.7128},{name:"Sozopol",lat:42.4172,lon:27.6942},{name:"Balchik",lat:43.4042,lon:28.1633},{name:"Kavarna",lat:43.4358,lon:28.3386},{name:"Pomorie",lat:42.5592,lon:27.6394},{name:"Primorsko",lat:42.2614,lon:27.7553},{name:"Tsarevo",lat:42.1706,lon:27.8481},{name:"Sveti-Vlas",lat:42.7133,lon:27.7583},{name:"Kiten",lat:42.235,lon:27.7767},{name:"Ahtopol",lat:42.1,lon:27.9392},{name:"Obzor",lat:42.8203,lon:27.8803},{name:"Bucharest",lat:44.4268,lon:26.1025},{name:"Cluj-Napoca",lat:46.7712,lon:23.6236},{name:"Timisoara",lat:45.7489,lon:21.2087},{name:"Iasi",lat:47.1585,lon:27.6014},{name:"Constanta",lat:44.1792,lon:28.6498},{name:"Craiova",lat:44.3302,lon:23.7949},{name:"Brasov",lat:45.658,lon:25.6012},{name:"Galati",lat:45.4353,lon:28.008},{name:"Ploiesti",lat:44.9367,lon:26.0128},{name:"Oradea",lat:47.0465,lon:21.9189},{name:"Braila",lat:45.2692,lon:27.9575},{name:"Arad",lat:46.1833,lon:21.3167},{name:"Pitesti",lat:44.8565,lon:24.8697},{name:"Sibiu",lat:45.7983,lon:24.1256},{name:"Bacau",lat:46.567,lon:26.9146},{name:"Targu-Mures",lat:46.5456,lon:24.5625},{name:"Baia-Mare",lat:47.6567,lon:23.585},{name:"Buzau",lat:45.1516,lon:26.8162},{name:"Botosani",lat:47.7408,lon:26.6625},{name:"Satu-Mare",lat:47.79,lon:22.89},{name:"Ramnicu-Valcea",lat:45.1044,lon:24.3633},{name:"Suceava",lat:47.6514,lon:26.2556},{name:"Piatra-Neamt",lat:46.9275,lon:26.3708},{name:"Drobeta-Turnu-Severin",lat:44.6269,lon:22.6564},{name:"Targu-Jiu",lat:45.0319,lon:23.2689},{name:"Tulcea",lat:45.1792,lon:28.7911},{name:"Targoviste",lat:44.9258,lon:25.4572},{name:"Bistrita",lat:47.1333,lon:24.5},{name:"Resita",lat:45.3008,lon:21.8892},{name:"Slatina",lat:44.4311,lon:24.3642},{name:"Hunedoara",lat:45.75,lon:22.9},{name:"Vaslui",lat:46.6383,lon:27.7292},{name:"Calarasi",lat:44.2,lon:27.3333},{name:"Giurgiu",lat:43.9028,lon:25.9694},{name:"Roman",lat:46.9242,lon:26.9225},{name:"Deva",lat:45.8833,lon:22.9},{name:"Barlad",lat:46.2306,lon:27.6681},{name:"Alba-Iulia",lat:46.0667,lon:23.5833},{name:"Zalau",lat:47.1833,lon:23.05},{name:"Sfantu-Gheorghe",lat:45.8642,lon:25.7889},{name:"Medias",lat:46.1642,lon:24.3514},{name:"Slobozia",lat:44.5625,lon:27.3644},{name:"Alexandria-RO",lat:43.9686,lon:25.3331},{name:"Lugoj",lat:45.6883,lon:21.9031},{name:"Medgidia",lat:44.2506,lon:28.2619},{name:"Miercurea-Ciuc",lat:46.3606,lon:25.8022},{name:"Sighetu-Marmatiei",lat:47.9292,lon:23.8864},{name:"Tecuci",lat:45.8458,lon:27.4292},{name:"Petrosani",lat:45.4147,lon:23.3739},{name:"Mangalia",lat:43.8153,lon:28.5828},{name:"Dej",lat:47.1425,lon:23.8742},{name:"Odorheiu-Secuiesc",lat:46.3047,lon:25.2925},{name:"Lugoj-RO",lat:45.6883,lon:21.9031},{name:"Reghin",lat:46.7778,lon:24.7061},{name:"Chisinau",lat:47.0105,lon:28.8638},{name:"Balti",lat:47.7611,lon:27.9289},{name:"Tiraspol",lat:46.8403,lon:29.6433},{name:"Bender",lat:46.8314,lon:29.4778},{name:"Cahul",lat:45.9075,lon:28.1942},{name:"Ribnita",lat:47.7658,lon:29.0069},{name:"Soroca",lat:48.1564,lon:28.2847},{name:"Orhei",lat:47.3831,lon:28.8231},{name:"Comrat",lat:46.3003,lon:28.6572},{name:"Ungheni",lat:47.2042,lon:27.7958},{name:"Nisiporeni",lat:47.0814,lon:28.1783},{name:"Ceadir-Lunga",lat:46.0553,lon:28.8317},{name:"Straseni",lat:47.1414,lon:28.6103},{name:"Budapest-HU",lat:47.4979,lon:19.0402},{name:"Miskolc-HU",lat:48.1035,lon:20.7784},{name:"Gyor",lat:47.6875,lon:17.6504},{name:"Nyiregyhaza",lat:47.9554,lon:21.7167},{name:"Kecskemet",lat:46.9081,lon:19.6931},{name:"Szekesfehervar",lat:47.186,lon:18.4221},{name:"Szombathely",lat:47.2307,lon:16.6218},{name:"Szolnok",lat:47.1751,lon:20.1831},{name:"Tatabanya",lat:47.5872,lon:18.4029},{name:"Kaposvar",lat:46.3594,lon:17.7967},{name:"Bekescsaba",lat:46.6811,lon:21.0961},{name:"Veszprem",lat:47.0933,lon:17.9114},{name:"Zalaegerszeg",lat:46.8417,lon:16.8444},{name:"Sopron",lat:47.685,lon:16.5908},{name:"Eger",lat:47.9026,lon:20.3772},{name:"Nagykanizsa",lat:46.4535,lon:16.9911},{name:"Dunaujvaros",lat:46.9619,lon:18.935},{name:"Hodmezovasarhely",lat:46.4174,lon:20.3241},{name:"Salgotarjan",lat:48.0998,lon:19.8039},{name:"Szekszard",lat:46.3508,lon:18.7039},{name:"Mosonmagyarovar",lat:47.8783,lon:17.27},{name:"Papa",lat:47.3308,lon:17.4678},{name:"Gyula",lat:46.6456,lon:21.2725},{name:"Hajduboszormeny",lat:47.6741,lon:21.5093},{name:"Esztergom",lat:47.7856,lon:18.7402},{name:"Szentendre",lat:47.6694,lon:19.0758},{name:"Kiskunfelegyhaza",lat:46.7119,lon:19.8453},{name:"Jaszbereny",lat:47.5028,lon:19.9133},{name:"Oroshaza",lat:46.565,lon:20.6481},{name:"Dunakeszi",lat:47.6433,lon:19.1394},{name:"Szentes",lat:46.6564,lon:20.2647},{name:"Mako",lat:46.2167,lon:20.4833},{name:"Siegburg",lat:50.8014,lon:7.2044},{name:"Hattingen",lat:51.3986,lon:7.1856},{name:"Sankt-Augustin",lat:50.77,lon:7.186},{name:"Hilden",lat:51.1691,lon:6.9324},{name:"Ahlen",lat:51.7629,lon:7.8933},{name:"Euskirchen",lat:50.6601,lon:6.7872},{name:"Wolfenbuettel",lat:52.1622,lon:10.5369},{name:"Bensheim",lat:49.6837,lon:8.6181},{name:"Pirmasens",lat:49.201,lon:7.6049},{name:"Schwerte",lat:51.4442,lon:7.575},{name:"Goch",lat:51.6795,lon:6.1625},{name:"Wismar",lat:53.8925,lon:11.465},{name:"Freiberg",lat:50.9119,lon:13.3428},{name:"Bautzen",lat:51.1814,lon:14.4244},{name:"Halberstadt",lat:51.8953,lon:11.0478},{name:"Stendal",lat:52.6025,lon:11.8622},{name:"Lahr",lat:48.3378,lon:7.8681},{name:"Crailsheim",lat:49.1347,lon:10.0717},{name:"Rastatt",lat:48.8578,lon:8.2031},{name:"Memmingen",lat:47.9838,lon:10.1814},{name:"Deggendorf",lat:48.8353,lon:12.9603},{name:"Coburg",lat:50.2599,lon:10.9644},{name:"Nuertingen",lat:48.6256,lon:9.3361},{name:"Fuerstenwalde",lat:52.3667,lon:14.0667},{name:"Heide",lat:54.1953,lon:9.0964},{name:"Itzehoe",lat:53.9219,lon:9.5161},{name:"Rendsburg",lat:54.3056,lon:9.6644},{name:"Nordenham",lat:53.4833,lon:8.4833},{name:"Emden",lat:53.3669,lon:7.206},{name:"Aurich",lat:53.4714,lon:7.4836},{name:"Lingen",lat:52.5228,lon:7.3197},{name:"Nordhorn",lat:52.4344,lon:7.0694},{name:"Gronau",lat:52.2125,lon:7.0239},{name:"Coesfeld",lat:51.9458,lon:7.1658},{name:"Soest",lat:51.5714,lon:8.1092},{name:"Olpe",lat:51.0298,lon:7.8447},{name:"Meschede",lat:51.3503,lon:8.2839},{name:"Limburg-an-der-Lahn",lat:50.3888,lon:8.0642},{name:"Wetzlar",lat:50.5667,lon:8.5},{name:"Marburg-Lahn",lat:50.8091,lon:8.7709},{name:"Gießen",lat:50.5872,lon:8.6746},{name:"Friedberg",lat:50.3353,lon:8.7547},{name:"Bad-Homburg",lat:50.2281,lon:8.6144},{name:"Hanaun",lat:50.132,lon:8.9171},{name:"Maintal",lat:50.15,lon:8.8333},{name:"Rodgau",lat:50.0264,lon:8.8856},{name:"Dreieich",lat:50.0204,lon:8.6946},{name:"Langen",lat:49.9914,lon:8.6672},{name:"Rüsselsheim",lat:49.9951,lon:8.4111},{name:"Bad-Kreuznach",lat:49.8458,lon:7.8647},{name:"Idar-Oberstein",lat:49.7025,lon:7.3244},{name:"Speyer",lat:49.3175,lon:8.4373},{name:"Landau",lat:49.1983,lon:8.1147},{name:"Pirmasens-DE",lat:49.201,lon:7.6049},{name:"Zweibrücken",lat:49.2494,lon:7.3608},{name:"Saarlouis",lat:49.3156,lon:6.7511},{name:"Neunkirchen",lat:49.3492,lon:7.1689},{name:"Homburg",lat:49.3256,lon:7.3392},{name:"Merzig",lat:49.4431,lon:6.6358},{name:"St-Ingbert",lat:49.2794,lon:7.1169},{name:"Baden-Baden",lat:48.7619,lon:8.2408},{name:"Offenburg",lat:48.4711,lon:7.9406},{name:"Lahr-Schwarzwald",lat:48.3378,lon:7.8681},{name:"Villingen",lat:48.0601,lon:8.4587},{name:"Schwenningen",lat:48.06,lon:8.5333},{name:"Singen",lat:47.7601,lon:8.8383},{name:"Ravensburg",lat:47.7816,lon:9.6124},{name:"Friedrichshafen",lat:47.6542,lon:9.4792},{name:"Biberach",lat:48.0975,lon:9.7892},{name:"Goppingen",lat:48.7025,lon:9.6528},{name:"Waiblingen",lat:48.8317,lon:9.3192},{name:"Schwabisch-Gmund",lat:48.8028,lon:9.7981},{name:"Heidenheim",lat:48.6756,lon:10.1517},{name:"Schwabisch-Hall",lat:49.1122,lon:9.7375},{name:"Heilbronn-DE",lat:49.1427,lon:9.2109},{name:"Neckarsulm",lat:49.1914,lon:9.2242},{name:"Bad-Mergentheim",lat:49.4912,lon:9.7725},{name:"Ansbach",lat:49.3008,lon:10.5714},{name:"Feuchtwangen",lat:49.1678,lon:10.3308},{name:"Dinkelsbuhl",lat:49.0683,lon:10.3189},{name:"Rothenburg-ob-der-Tauber",lat:49.3769,lon:10.1789},{name:"Nördlingen",lat:48.8511,lon:10.49},{name:"Donauwörth",lat:48.7183,lon:10.7786},{name:"Eichstätt",lat:48.8919,lon:11.1839},{name:"Neuburg-an-der-Donau",lat:48.7364,lon:11.1803},{name:"Pfaffenhofen",lat:48.5295,lon:11.5064},{name:"Freising",lat:48.4028,lon:11.7489},{name:"Erding",lat:48.3061,lon:11.8928},{name:"Dachau",lat:48.2597,lon:11.4342},{name:"Fuerstenfeldbruck",lat:48.1778,lon:11.2556},{name:"Landsberg-am-Lech",lat:48.0508,lon:10.8683},{name:"Kaufbeuren",lat:47.88,lon:10.62},{name:"Füssen",lat:47.5694,lon:10.7003},{name:"Garmisch-Partenkirchen",lat:47.4925,lon:11.0964},{name:"Weilheim",lat:47.8392,lon:11.1417},{name:"Starnberg",lat:47.9978,lon:11.3417},{name:"Rosenheim",lat:47.8564,lon:12.129},{name:"Traunstein",lat:47.8683,lon:12.6453},{name:"Bad-Reichenhall",lat:47.7253,lon:12.8761},{name:"Passau",lat:48.5665,lon:13.4312},{name:"Straubing",lat:48.8822,lon:12.5744},{name:"Regensburg-DE",lat:49.0134,lon:12.1016},{name:"Weiden",lat:49.6714,lon:12.1622},{name:"Schwandorf",lat:49.3289,lon:12.1122},{name:"Cham",lat:49.2178,lon:12.6622},{name:"Ambroz",lat:50.0412,lon:15.7761},{name:"Pardubice",lat:50.0412,lon:15.7761},{name:"Liberec",lat:50.7671,lon:15.0562},{name:"Olomouc",lat:49.5938,lon:17.2508},{name:"Ceske-Budejovice",lat:48.9747,lon:14.4747},{name:"Hradec-Kralove",lat:50.2104,lon:15.8253},{name:"Usti-nad-Labem",lat:50.6603,lon:14.0389},{name:"Zlin",lat:49.2266,lon:17.668},{name:"Havirov",lat:49.7797,lon:18.438},{name:"Kladno",lat:50.1431,lon:14.1083},{name:"Most",lat:50.503,lon:13.6367},{name:"Opava",lat:49.9387,lon:17.9026},{name:"Frydek-Mistek",lat:49.6826,lon:18.3493},{name:"Karvina",lat:49.8543,lon:18.5417},{name:"Jihlava",lat:49.4003,lon:15.5905},{name:"Teplice",lat:50.6405,lon:13.8244},{name:"Decin",lat:50.7744,lon:14.2119},{name:"Karlovy-Vary",lat:50.2305,lon:12.8711},{name:"Chomutov",lat:50.4601,lon:13.4178},{name:"Jablonec-nad-Nisou",lat:50.7244,lon:15.1711},{name:"Mlada-Boleslav",lat:50.4114,lon:14.9033},{name:"Prostejov",lat:49.4719,lon:17.1106},{name:"Prerov",lat:49.4551,lon:17.4508},{name:"Ceska-Lipa",lat:50.6855,lon:14.5378},{name:"Trebic",lat:49.2149,lon:15.8817},{name:"Trutnov",lat:50.5619,lon:15.9128},{name:"Znojmo",lat:48.8555,lon:16.0489},{name:"Pribram",lat:49.6897,lon:14.0103},{name:"Cheb",lat:50.0797,lon:12.3703},{name:"Kolin",lat:50.0281,lon:15.2006},{name:"Pisek",lat:49.3081,lon:14.1478},{name:"Kromeriz",lat:49.2978,lon:17.3931},{name:"Vsetin",lat:49.3386,lon:17.9961},{name:"Valasske-Mezirici",lat:49.4711,lon:17.9711},{name:"Uherske-Hradiste",lat:49.0686,lon:17.4597},{name:"Skalica",lat:48.8447,lon:17.2244},{name:"Presov",lat:48.9984,lon:21.24},{name:"Zilina",lat:49.2232,lon:18.7434},{name:"Nitra",lat:48.3076,lon:18.0845},{name:"Banska-Bystrica",lat:48.7395,lon:19.1535},{name:"Trnava",lat:48.3742,lon:17.5849},{name:"Martin",lat:49.065,lon:18.9219},{name:"Trencin",lat:48.8945,lon:18.0414},{name:"Poprad",lat:49.0543,lon:20.298},{name:"Prievidza",lat:48.7719,lon:18.6253},{name:"Zvolen",lat:48.5744,lon:19.1532},{name:"Povazska-Bystrica",lat:49.1164,lon:18.4451},{name:"Michalovce",lat:48.7543,lon:21.9169},{name:"Nove-Zamky",lat:47.9852,lon:18.1611},{name:"Spisska-Nova-Ves",lat:48.9442,lon:20.5617},{name:"Komarno",lat:47.7633,lon:18.1225},{name:"Levice",lat:48.2156,lon:18.6078},{name:"Humenne",lat:48.9375,lon:21.9103},{name:"Bardejov",lat:49.2917,lon:21.2728},{name:"Liptovsky-Mikulas",lat:49.0831,lon:19.6206},{name:"Piestany",lat:48.5906,lon:17.8261},{name:"Ruzomberok",lat:49.0811,lon:19.3033},{name:"Topolcany",lat:48.5619,lon:18.1764},{name:"Lucenec",lat:48.3325,lon:19.6617},{name:"Cadca",lat:49.4383,lon:18.7892},{name:"Dubnica-nad-Vahu",lat:48.9606,lon:18.1642},{name:"Rimavska-Sobota",lat:48.3833,lon:20.0167},{name:"Partizanske",lat:48.6272,lon:18.3772},{name:"Sala",lat:48.1517,lon:17.8731},{name:"Hlohovec",lat:48.4289,lon:17.8031},{name:"Brezno",lat:48.8042,lon:19.6433},{name:"Senica",lat:48.6789,lon:17.3667},{name:"Nove-Mesto-nad-Vahom",lat:48.7567,lon:17.8306},{name:"Senecon",lat:48.2197,lon:17.3992},{name:"Senec",lat:48.2197,lon:17.3992},{name:"Gelnica",lat:48.8553,lon:20.9364},{name:"Kecskemet-HU",lat:46.9081,lon:19.6931},{name:"Baja",lat:46.1833,lon:18.95},{name:"Esztergom-HU",lat:47.7856,lon:18.7402},{name:"Dunakeszi-HU",lat:47.6433,lon:19.1394},{name:"Szentendre-HU",lat:47.6694,lon:19.0758},{name:"Vac",lat:47.7751,lon:19.1286},{name:"Godollo",lat:47.5956,lon:19.3586},{name:"Budaors",lat:47.4622,lon:18.9531},{name:"Szigetszentmiklos",lat:47.3444,lon:19.0469},{name:"Erd",lat:47.3801,lon:18.9197},{name:"Cegled",lat:47.1744,lon:19.7983},{name:"Nagykoros",lat:47.0322,lon:19.7828},{name:"Szententes",lat:46.6564,lon:20.2647},{name:"Szeged-HU",lat:46.253,lon:20.1414},{name:"Békéscsaba",lat:46.6811,lon:21.0961},{name:"Gyula-HU",lat:46.6456,lon:21.2725},{name:"Orosháza",lat:46.565,lon:20.6481},{name:"Debrecen-HU",lat:47.5316,lon:21.6273},{name:"Hajdúböszörmény",lat:47.6741,lon:21.5093},{name:"Hajduszoboszlo",lat:47.4525,lon:21.3961},{name:"Nyíregyháza",lat:47.9554,lon:21.7167},{name:"Mátészalka",lat:47.9458,lon:22.3272},{name:"Miskolc-City",lat:48.1035,lon:20.7784},{name:"Ozd",lat:48.2192,lon:20.2869},{name:"Kazincbarcika",lat:48.2525,lon:20.6453},{name:"Eger-HU",lat:47.9026,lon:20.3772},{name:"Gyöngyös",lat:47.7839,lon:19.9286},{name:"Salgotarján",lat:48.0998,lon:19.8039},{name:"Hatvan",lat:47.6681,lon:19.6828},{name:"Szolnok-HU",lat:47.1751,lon:20.1831},{name:"Jászberény",lat:47.5028,lon:19.9133},{name:"Karcag",lat:47.3156,lon:20.9206},{name:"Tatabánya",lat:47.5872,lon:18.4029},{name:"Tata",lat:47.6533,lon:18.3183},{name:"Oroszlány",lat:47.4897,lon:18.3144},{name:"Komárom",lat:47.7411,lon:18.1189},{name:"Gyor-City",lat:47.6875,lon:17.6504},{name:"Sopron-HU",lat:47.685,lon:16.5908},{name:"Mosonmagyaróvár",lat:47.8783,lon:17.27},{name:"Szombathely-HU",lat:47.2307,lon:16.6218},{name:"Sárvár",lat:47.2536,lon:16.9361},{name:"Zalaegerszeg-HU",lat:46.8417,lon:16.8444},{name:"Nagykanizsa-HU",lat:46.4535,lon:16.9911},{name:"Keszthely",lat:46.7681,lon:17.2431},{name:"Veszprém",lat:47.0933,lon:17.9114},{name:"Pápa",lat:47.3308,lon:17.4678},{name:"Ajka",lat:47.1044,lon:17.5564},{name:"Kaposvár",lat:46.3594,lon:17.7967},{name:"Siófok",lat:46.9041,lon:18.0583},{name:"Szekszárd",lat:46.3508,lon:18.7039},{name:"Paks",lat:46.6264,lon:18.8617},{name:"Dublin-IE",lat:53.3498,lon:-6.2603},{name:"Cork-IE",lat:51.8985,lon:-8.4756},{name:"Limerick-IE",lat:52.6638,lon:-8.6268},{name:"Galway-IE",lat:53.2707,lon:-9.0568},{name:"Waterford",lat:52.2592,lon:-7.1101},{name:"Drogheda",lat:53.7144,lon:-6.3517},{name:"Dundalk",lat:54.0044,lon:-6.4022},{name:"Swords",lat:53.4597,lon:-6.2181},{name:"Bray",lat:53.2028,lon:-6.1044},{name:"Navan",lat:53.6528,lon:-6.6833},{name:"Kilkenny",lat:52.6541,lon:-7.2448},{name:"Ennis",lat:52.8464,lon:-8.9831},{name:"Carlow",lat:52.8364,lon:-6.9242},{name:"Tralee",lat:52.2714,lon:-9.6997},{name:"Sligo",lat:54.2712,lon:-8.4758},{name:"Athlone",lat:53.4244,lon:-7.9358},{name:"Wexford",lat:52.3342,lon:-6.4601},{name:"Mullingar",lat:53.5244,lon:-7.3486},{name:"Letterkenny",lat:54.9547,lon:-7.7336},{name:"Tullamore",lat:53.2742,lon:-7.4944},{name:"Killarney",lat:52.0594,lon:-9.5044},{name:"Arklow",lat:52.7936,lon:-6.1558},{name:"Cobh",lat:51.8514,lon:-8.2975},{name:"Castlebar",lat:53.8544,lon:-9.3014},{name:"Ballina",lat:54.1147,lon:-9.1558},{name:"Enniscorthy",lat:52.5028,lon:-6.5681},{name:"Mallow",lat:52.1381,lon:-8.6433},{name:"Midleton",lat:51.9161,lon:-8.1731},{name:"Tramore",lat:52.1622,lon:-7.1517},{name:"Youghal",lat:51.9542,lon:-7.8506},{name:"Longford",lat:53.7275,lon:-7.7981},{name:"Dungarvan",lat:52.0919,lon:-7.6253},{name:"Thurles",lat:52.6806,lon:-7.8131},{name:"Nenagh",lat:52.8628,lon:-8.1983},{name:"Cavan",lat:53.9917,lon:-7.3614},{name:"Monaghan",lat:54.2486,lon:-6.9719},{name:"Tuam",lat:53.5153,lon:-8.8506},{name:"Clonmel",lat:52.355,lon:-7.7042},{name:"Belfast-UK",lat:54.5973,lon:-5.9301},{name:"Derry",lat:54.9958,lon:-7.3075},{name:"Lisburn",lat:54.5122,lon:-6.0353},{name:"Newtownabbey",lat:54.6644,lon:-5.9189},{name:"Bangor-UK",lat:54.6533,lon:-5.6675},{name:"Craigavon",lat:54.4492,lon:-6.3756},{name:"Ballymena",lat:54.8631,lon:-6.2767},{name:"Newry",lat:54.1758,lon:-6.3372},{name:"Coleraine",lat:55.1333,lon:-6.6667},{name:"Antrim",lat:54.7139,lon:-6.2081},{name:"Omagh",lat:54.6,lon:-7.3},{name:"Larne",lat:54.85,lon:-5.8167},{name:"Banbridge",lat:54.3486,lon:-6.2658},{name:"Armagh",lat:54.3492,lon:-6.6547},{name:"Enniskillen",lat:54.3453,lon:-7.6367},{name:"Strabane",lat:54.8253,lon:-7.4644},{name:"Limavady",lat:55.0506,lon:-6.9506},{name:"Holywood",lat:54.6386,lon:-5.8436},{name:"Dungannon",lat:54.5033,lon:-6.7711},{name:"Cookstown",lat:54.6417,lon:-6.7456},{name:"Downpatrick",lat:54.3283,lon:-5.716}];
+    // Helper to find closest city using the game's existing window.getDistance formula
+    function getNearestCity(lat, lon) {
+        if (typeof window.getDistance !== "function") return "Helsinki";
+        let nearest = DEF_CITIES[0];
+        let minDistance = window.getDistance(lat, lon, nearest.lat, nearest.lon);
+        for (let i = 1; i < DEF_CITIES.length; i++) {
+            let dist = window.getDistance(lat, lon, DEF_CITIES[i].lat, DEF_CITIES[i].lon);
+            if (dist < minDistance) {
+                minDistance = dist;
+                nearest = DEF_CITIES[i];
+            }
+        }
+        return nearest.name;
+    }
+
+    // 4. IP Location API fetching with fallbacks
+    async function locateUserCity() {
+        try {
+            const res = await fetch("https://ipapi.co/json/");
+            if (!res.ok) throw new Error("IP Geolocation API failed");
+            const data = await res.json();
+            if (data.city) {
+                return data.city.replace(/[^a-zA-Z0-9]/g, "-");
+            }
+            if (data.latitude && data.longitude) {
+                return getNearestCity(data.latitude, data.longitude);
+            }
+        } catch (e) {
+            console.log("IP Geolocation failed, trying high-accuracy GPS fallback...", e);
+        }
+
+        // Secondary fallback to native high accuracy GPS coordinates if available
+        return new Promise((resolve) => {
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(
+                    (pos) => {
+                        resolve(getNearestCity(pos.coords.latitude, pos.coords.longitude));
+                    },
+                    () => { resolve("Helsinki"); }, // Global standard ultimate fallback
+                    { timeout: 4000 }
+                );
+            } else {
+                resolve("Helsinki");
+            }
+        });
+    }
+
+    // 5. Override MQTT network actions to achieve distributed automated hosting/joining
+    let checkTimeout = null;
+    let raidFound = false;
+
+    window.connectMQTT = function(code) {
+        if(raidpasses > 0){
+        var raidpasses -= 1;
+        if (mqttClient) mqttClient.end();
+        mqttClient = mqtt.connect(MQTT_BROKER, { keepalive: 30 });
+        
+        mqttClient.on('connect', () => {
+            console.log("Connected to city room topic:", code);
+            mqttClient.subscribe(RAID_TOPIC_PREFIX + code);
+            
+            // Distributed check: Ping to see if another player is hosting this city
+            if (!raidHost) {
+                mqttClient.publish(RAID_TOPIC_PREFIX + code, JSON.stringify({ type: "pingRaid" }));
+            } else {
+                mqttClient.publish(RAID_TOPIC_PREFIX + code, JSON.stringify({ type: "raidState", raid: raidActive }));
+            }
+        });
+
+        mqttClient.on('message', (topic, payload) => {
+            try {
+                const msg = JSON.parse(payload.toString());
+                
+                // Active Hosts respond to pings by transmitting their state immediately
+                if (msg.type === "pingRaid" && raidHost && raidActive) {
+                    mqttClient.publish(RAID_TOPIC_PREFIX + code, JSON.stringify({ type: "raidState", raid: raidActive }));
+                    return;
+                }
+                
+                // If a state arrives from a host, joiners intercept it
+                if (msg.type === "raidState") {
+                    if (!raidHost) {
+                        if (!raidFound) {
+                            raidFound = true;
+                            clearTimeout(checkTimeout); // Cancel automatic hosting flow
+                            document.getElementById("customRaidMenuModal").style.display = "none";
+                            
+                            mqttClient.publish(RAID_TOPIC_PREFIX + code, JSON.stringify({
+                                type: "joinRaid",
+                                playerName: window.playerName || "Guest", 
+                                wizards: Array.from({length: 6}, (_, i) => ({ name: `Wizard-${i + 1}`, damagePerSec: 5 }))
+                            }));
+                        }
+                        raidActive = msg.raid;
+                        showRaidBattleScreen(raidActive.boss);
+                        updateRaidUI();
+                    }
+                }
+                
+                if (msg.type === "joinRaid" && raidHost && raidActive) {
+                    if (raidActive.players.length >= MAX_PLAYERS) return;
+                    if (!raidActive.players.some(p => p.name === msg.playerName)) {
+                        raidActive.players.push({ name: msg.playerName, wizards: msg.wizards });
+                        mqttClient.publish(RAID_TOPIC_PREFIX + code, JSON.stringify({ type: "raidState", raid: raidActive }));
+                        alert(msg.playerName + " joined your city raid!");
+                    }
+                }
+                
+                if (msg.type === "raidEnded") {
+                    const rScreen = document.getElementById('raidBattleScreen');
+                    if (rScreen) rScreen.style.display = "none";
+                    if (msg.boss && msg.boss.hp <= 0) collectPolygonFromRaid(msg.boss);
+                    raidActive = null;
+                    if (mqttClient) mqttClient.end();
+                }
+            } catch (e) {
+                console.error("Raid sync transmission error:", e);
+            }
+        });
+    };}
+else{alert(" You're out of raid tickets! \n Walk 100 steps to earn one.");}
+
+    // 6. Hook events up to the elements
+    const customModal = document.getElementById("customRaidMenuModal");
+    const statusText = document.getElementById("customRaidStatus");
+    const titleText = document.getElementById("customRaidTitle");
+    const greenActionBtn = document.getElementById("customJoinRaidBtn");
+
+    document.getElementById("battleBtn").onclick = function() {
+        customModal.style.display = "flex";
+        statusText.textContent = "Ready to scan your location";
+        titleText.textContent = "RAID HUB";
+    };
+
+    document.getElementById("closeRaidMenuBtn").onclick = function() {
+        customModal.style.display = "none";
+        clearTimeout(checkTimeout);
+    };
+
+    greenActionBtn.onclick = async function() {
+        greenActionBtn.disabled = true;
+        statusText.textContent = "Locating your IP city...";
+        
+        let cityName = await locateUserCity();
+        currentRaidCode = cityName.toUpperCase();
+        titleText.textContent = "RAID: " + currentRaidCode;
+        statusText.textContent = "Searching for active raids in " + cityName + "...";
+
+        raidHost = false;
+        raidFound = false;
+
+        // Initialize connection & check if a match is running
+        connectMQTT(currentRaidCode);
+
+        // If no host broadcasts within 1.5 seconds, we initialize the room as the host
+        checkTimeout = setTimeout(() => {
+            if (!raidFound) {
+                console.log("No active room found. Creating automated city raid room...");
+                statusText.textContent = "Creating new city room...";
+                
+                raidHost = true;
+                raidActive = {
+                    code: currentRaidCode,
+                    boss: createRaidBoss(),
+                    players: [{
+                        name: window.playerName || "Host", 
+                        wizards: Array.from({length: 6}, (_, i) => ({ name: `Wizard-${i + 1}`, damagePerSec: 5 }))
+                    }],
+                    timer: RAID_TIME
+                };
+
+                // Broadcast room generation
+                mqttClient.publish(RAID_TOPIC_PREFIX + currentRaidCode, JSON.stringify({ type: "raidState", raid: raidActive }));
+                
+                customModal.style.display = "none";
+                showRaidBattleScreen(raidActive.boss);
+                startRaidBattleLoop();
+            }
+            greenActionBtn.disabled = false;
+        }, 1500);
+    };
+})();
+</script>
+<script>
+// 1. Core Global State Tracking Variables
+let totalSessionSteps = 0;      // Continuous tracker for session steps
+let currentMeterSteps = 0;      // Progress toward the 100-step goal
+let raidPasses = 0;             // Total usable raid passes
+let lastSensorStepTime = 0;     // Timestamp for 0.5s cooldown check
+
+let checkTimeout = null;
+let raidFound = false;
+// To be populated later by you
+
+// 2. Helper to find closest city using the game's existing window.getDistance formula
+function getNearestCity(lat, lon) {
+    if (typeof window.getDistance !== "function" || DEF_CITIES.length === 0) return "Helsinki";
+    let nearest = DEF_CITIES[0];
+    let minDistance = window.getDistance(lat, lon, nearest.lat, nearest.lon);
+    for (let i = 1; i < DEF_CITIES.length; i++) {
+        let dist = window.getDistance(lat, lon, DEF_CITIES[i].lat, DEF_CITIES[i].lon);
+        if (dist < minDistance) {
+            minDistance = dist;
+            nearest = DEF_CITIES[i];
+        }
+    }
+    return nearest.name;
+}
+
+// ============================================================================
+// GLOBAL HIGH-PRECISION IP GEOLOCATION ENGINE
+// ============================================================================
+async function locateUserCity() {
+    // List of reliable global IP geolocation endpoints to fall back on sequentially
+    // Priority 1: ip-api.com (SSL-fallback/Pro configuration)
+    // Priority 2: ipapi.co (Global standard HTTPS payload)
+    const endpoints = [
+        "https://ipapi.co/json/",
+        "https://api. things-api / or similar proxy", // placeholder reminder if you acquire an API token
+        "http://ip-api.com/json/" // Note: Browsers block unencrypted HTTP fetches on HTTPS sites!
+    ];
+
+    // Try primary high-accuracy retrieval loop
+    try {
+        // We use ipapi.co via secure HTTPS for native cross-origin compatibility
+        const res = await fetch("https://ipapi.co/json/");
+        if (!res.ok) throw new Error("Primary API payload failed");
+        
+        const data = await res.json();
+        
+        if (data && data.city) {
+            let cleanCity = data.city.trim();
+            
+            console.log(`[GLOBAL IP ENGINE] Verified Geolocation: ${cleanCity}, ${data.country_name || ''}`);
+            
+            // Replaces spaces, commas, and special characters with hyphens globally 
+            // e.g., "New York" -> "New-York", "Kyoto, Japan" -> "Kyoto--Japan"
+            return cleanCity.replace(/[^a-zA-Z0-9]/g, "-").replace(/-+/g, "-");
+        }
+    } catch (e) {
+        console.warn("[GLOBAL IP ENGINE] Primary endpoint failed, attempting secondary mirror...", e);
+    }
+
+    // Secondary Backup Provider Loop (If primary is rate-limited or blocked)
+    try {
+        const backupRes = await fetch("http://ip-api.com/json/");
+        const backupData = await backupRes.json();
+        
+        if (backupData && backupData.city) {
+            return backupData.city.trim().replace(/[^a-zA-Z0-9]/g, "-").replace(/-+/g, "-");
+        }
+    } catch (err) {
+        console.error("[GLOBAL IP ENGINE CRITICAL] All IP lookup providers failed: ", err);
+    }
+
+    // Ultimate Safe Fallback so the game doesn't crash if the player is entirely offline/blocked
+    return "Global-Lobby"; 
+}
+
+// 4. Override MQTT network actions with working Raid Pass validation rules
+window.connectMQTT = function(code) {
+    if (raidPasses > 0) {
+        raidPasses -= 1; // Deduct one valid pass safely
+        updateSensorPassUI(); // Refresh UI values instantly
+        
+        if (mqttClient) mqttClient.end();
+        mqttClient = mqtt.connect(MQTT_BROKER, { keepalive: 30 });
+        
+        mqttClient.on('connect', () => {
+            console.log("Connected to city room topic:", code);
+            mqttClient.subscribe(RAID_TOPIC_PREFIX + code);
+            
+            // Distributed check: Ping to see if another player is hosting this city
+            if (!raidHost) {
+                mqttClient.publish(RAID_TOPIC_PREFIX + code, JSON.stringify({ type: "pingRaid" }));
+            } else {
+                mqttClient.publish(RAID_TOPIC_PREFIX + code, JSON.stringify({ type: "raidState", raid: raidActive }));
+            }
+        });
+
+        mqttClient.on('message', (topic, payload) => {
+            try {
+                const msg = JSON.parse(payload.toString());
+                
+                // Active Hosts respond to pings by transmitting their state immediately
+                if (msg.type === "pingRaid" && raidHost && raidActive) {
+                    mqttClient.publish(RAID_TOPIC_PREFIX + code, JSON.stringify({ type: "raidState", raid: raidActive }));
+                    return;
+                }
+                
+                // If a state arrives from a host, joiners intercept it
+                if (msg.type === "raidState") {
+                    if (!raidHost) {
+                        if (!raidFound) {
+                            raidFound = true;
+                            clearTimeout(checkTimeout); // Cancel automatic hosting flow
+                            document.getElementById("customRaidMenuModal").style.display = "none";
+                            
+                            mqttClient.publish(RAID_TOPIC_PREFIX + code, JSON.stringify({
+                                type: "joinRaid",
+                                playerName: window.playerName || "Guest", 
+                                wizards: Array.from({length: 6}, (_, i) => ({ name: `Wizard-${i + 1}`, damagePerSec: 5 }))
+                            }));
+                        }
+                        raidActive = msg.raid;
+                        showRaidBattleScreen(raidActive.boss);
+                        updateRaidUI();
+                    }
+                }
+                
+                if (msg.type === "joinRaid" && raidHost && raidActive) {
+                    if (raidActive.players.length >= MAX_PLAYERS) return;
+                    if (!raidActive.players.some(p => p.name === msg.playerName)) {
+                        raidActive.players.push({ name: msg.playerName, wizards: msg.wizards });
+                        mqttClient.publish(RAID_TOPIC_PREFIX + code, JSON.stringify({ type: "raidState", raid: raidActive }));
+                        alert(msg.playerName + " joined your city raid!");
+                    }
+                }
+                
+                if (msg.type === "raidEnded") {
+                    const rScreen = document.getElementById('raidBattleScreen');
+                    if (rScreen) rScreen.style.display = "none";
+                    if (msg.boss && msg.boss.hp <= 0) collectPolygonFromRaid(msg.boss);
+                    raidActive = null;
+                    if (mqttClient) mqttClient.end();
+                }
+            } catch (e) {
+                console.error("Raid sync transmission error:", e);
+            }
+        });
+    } else {
+        alert("You're out of raid passes! \nWalk 100 steps to earn one.");
+        const greenActionBtn = document.getElementById("customJoinRaidBtn");
+        if (greenActionBtn) greenActionBtn.disabled = false;
+    }
+};
+
+// 5. UI Presentation Update Routine
+function updateSensorPassUI() {
+    const totalLabel = document.getElementById("hudSessionSteps");
+    const passLabel = document.getElementById("hudPassCount");
+    const progressLabel = document.getElementById("hudProgressSteps");
+    const progressBar = document.getElementById("hudProgressBar");
+
+    if (totalLabel) totalLabel.textContent = totalSessionSteps;
+    if (passLabel) passLabel.textContent = raidPasses;
+    if (progressLabel) progressLabel.textContent = currentMeterSteps;
+    if (progressBar) progressBar.style.width = currentMeterSteps + "%";
+}
+
+// 6. Inject the Custom Layout Setup on DOM Load
+document.addEventListener("DOMContentLoaded", () => {
+    // Inject single Battle Trigger Button
+    const raidUIContainer = document.getElementById("raidUIContainer");
+    if (raidUIContainer) {
+        raidUIContainer.innerHTML = `
+            <button id="battleBtn" style="background: linear-gradient(135deg, #ff4757, #ff6b81); color: white; border: 3px solid white; border-radius: 50px; padding: 12px 28px; font-weight: 900; text-transform: uppercase; letter-spacing: 1px; box-shadow: 0 4px 15px rgba(0,0,0,0.3); transition: transform 0.1s, filter 0.2s; cursor: pointer; font-family: sans-serif;">⚔️</button>
+        `;
+    }
+
+    // Inject the Arena Room Selection Layout incorporating Pass Meters directly inside the tray
+    const modalHTML = `
+        <div id="customRaidMenuModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 2000; justify-content: center; align-items: center; background-color: rgba(0,0,0,0.65); font-family: sans-serif;">
+            <div id="customRaidMenuContent" style="position: relative; width: 95%; max-width: 440px; height: 460px; border-radius: 25px; overflow: hidden; display: flex; flex-direction: column; align-items: center; justify-content: space-between; padding: 25px 20px; box-shadow: 0 12px 40px rgba(0,0,0,0.6); box-sizing: border-box; border: 4px solid rgba(255,255,255,0.2);
+                background-image: url('YOUR_POLYGON_IMAGE_URL'), url('https://wallup.net/wp-content/uploads/2016/05/02/274452-architecture-nature-trees-Sun-pillar-stone-Colosseum-Rome-Italy-capital-stairs-sunlight-path-field-grass-arena-arch-building-monuments.jpg');
+                background-size: 150px auto, cover; background-position: center 30%, center; background-repeat: no-repeat, no-repeat;">
+                
+                <button id="closeRaidMenuBtn" style="position: absolute; top: 15px; right: 15px; background: rgba(0,0,0,0.6); color: white; border: 2px solid white; border-radius: 50%; width: 35px; height: 35px; font-size: 16px; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; z-index: 10; transition: background 0.2s;">✕</button>
+                
+                <div style="text-align: center; width: 100%;">
+                    <h2 id="customRaidTitle" style="margin: 0; color: white; font-size: 26px; font-weight: 900; text-shadow: 0 3px 10px rgba(0,0,0,0.9); letter-spacing: 1px; text-transform: uppercase;">RAID HUB</h2>
+                    <p id="customRaidStatus" style="color: #e0e0e0; font-size: 12px; text-shadow: 0 2px 5px rgba(0,0,0,0.9); margin: 6px 0 0 0; font-weight: bold; background: rgba(0,0,0,0.5); padding: 4px 10px; border-radius: 10px; display: inline-block;">Ready to scan your location</p>
+                </div>
+
+                <div style="background: rgba(255, 255, 255, 0.9); padding: 10px 15px; border-radius: 15px; width: 85%; box-shadow: 0 4px 15px rgba(0,0,0,0.3); text-align: center; border: 2px solid #ff4757; box-sizing: border-box;">
+                    <div style="font-size: 11px; font-weight: bold; color: #7f8c8d; margin-bottom: 2px;">Steps: <span id="hudSessionSteps">0</span></div>
+                    <div style="font-size: 13px; font-weight: bold; color: #2c3e50; margin-bottom: 4px;">🎟️ Raid Tickets: <span id="hudPassCount">0</span></div>
+                    <div style="width: 100%; background: #e0e0e0; height: 10px; border-radius: 5px; overflow: hidden; position: relative;">
+                        <div id="hudProgressBar" style="width: 0%; height: 100%; background: linear-gradient(90deg, #ff4757, #ff6b81); transition: width 0.2s;"></div>
+                    </div>
+                    <div style="font-size: 11px; margin-top: 4px; color: #7f8c8d;"><span id="hudProgressSteps">0</span> / 100 steps</div>
+                </div>
+                
+                <button id="customJoinRaidBtn" style="background: linear-gradient(135deg, #2ecc71, #27ae60); color: white; border: 3px solid white; border-radius: 50px; padding: 14px 40px; font-size: 16px; font-weight: 900; text-transform: uppercase; letter-spacing: 1.5px; box-shadow: 0 6px 20px rgba(46, 204, 113, 0.4); cursor: pointer; transition: transform 0.1s, filter 0.2s;">JOIN RAID</button>
+            </div>
+        </div>
+    `;
+    document.body.insertAdjacentHTML('beforeend', modalHTML);
+
+    // Bind original control click listeners
+    const customModal = document.getElementById("customRaidMenuModal");
+    const statusText = document.getElementById("customRaidStatus");
+    const titleText = document.getElementById("customRaidTitle");
+    const greenActionBtn = document.getElementById("customJoinRaidBtn");
+
+    document.getElementById("battleBtn").onclick = function() {
+        customModal.style.display = "flex";
+        statusText.textContent = "Ready to scan your location";
+        titleText.textContent = "RAID HUB";
+        updateSensorPassUI(); // Ensure accurate numbers refresh on load
+    };
+
+    document.getElementById("closeRaidMenuBtn").onclick = function() {
+        customModal.style.display = "none";
+        clearTimeout(checkTimeout);
+    };
+
+    greenActionBtn.onclick = async function() {
+        greenActionBtn.disabled = true;
+        statusText.textContent = "Locating your IP city...";
+        
+        let cityName = await locateUserCity();
+        currentRaidCode = cityName.toUpperCase();
+        titleText.textContent = "RAID: " + currentRaidCode;
+        statusText.textContent = "Searching for active raids in " + cityName + "...";
+
+        raidHost = false;
+        raidFound = false;
+
+        // Initialize connection & verify pass wallet entry
+        connectMQTT(currentRaidCode);
+
+        // If no host broadcasts within 1.5 seconds, we initialize the room as the host
+        checkTimeout = setTimeout(() => {
+            if (!raidFound && raidPasses >= 0) {
+                console.log("No active room found. Creating automated city raid room...");
+                statusText.textContent = "Creating new city room...";
+                
+                raidHost = true;
+                raidActive = {
+                    code: currentRaidCode,
+                    boss: createRaidBoss(),
+                    players: [{
+                        name: window.playerName || "Host", 
+                        wizards: Array.from({length: 6}, (_, i) => ({ name: `Wizard-${i + 1}`, damagePerSec: 5 }))
+                    }],
+                    timer: RAID_TIME
+                };
+
+                // Broadcast room generation
+                mqttClient.publish(RAID_TOPIC_PREFIX + currentRaidCode, JSON.stringify({ type: "raidState", raid: raidActive }));
+                
+                customModal.style.display = "none";
+                showRaidBattleScreen(raidActive.boss);
+                startRaidBattleLoop();
+            }
+            greenActionBtn.disabled = false;
+        }, 1500);
+    };
+});
+
+// 7. Gyrometer & Accelerometer Movement/Step Detection Engine
+let lastAccelMagnitude = 0;
+window.addEventListener("devicemotion", (event) => {
+    let acc = event.accelerationIncludingGravity || event.acceleration;
+    if (!acc || acc.x === null) return;
+
+    // Calculate total structural force vector magnitude 
+    let magnitude = Math.sqrt(acc.x * acc.x + acc.y * acc.y + acc.z * acc.z);
+    let deltaForce = Math.abs(magnitude - lastAccelMagnitude);
+    lastAccelMagnitude = magnitude;
+
+    // A delta threshold over ~8.75 indicates a clear physical stride action occurred
+    if (deltaForce > 8.75) {
+        let currentTime = Date.now();
+        
+        // Exact 0.5-second (500ms) cooldown tracking restriction rule
+        if (currentTime - lastSensorStepTime >= 500) {
+            totalSessionSteps++;
+            currentMeterSteps++;
+            lastSensorStepTime = currentTime;
+
+            // When progress hits 100 steps, clear meter progress down to 0 and credit a pass
+            if (currentMeterSteps >= 100) {
+                currentMeterSteps = 0;
+                raidPasses++;
+            }
+            updateSensorPassUI();
+        }
+    }
+});
+</script>
