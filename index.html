@@ -74,15 +74,18 @@ async function checkWizardFestAccess() {
         return; 
     }
 
-    // 2. Sijainnin tarkistus IP-osoitteen perusteella
+    // 2. Sijainnin tarkistus uuden luotettavan IP-osoitteen perusteella
     try {
-        const res = await fetch("https://ipapi.co/json/");
+        // Vaihdettu toimivaksi todettuun ip-api.com -palveluun
+        const res = await fetch("http://ip-api.com/json/");
         if (!res.ok) throw new Error("Global IP Geolocation API failed");
         const data = await res.json();
         
-        if (data) {
-            // Haetaan maakoodi (esim. "FI") ja kaupunki alaviivoin/viivoin formatoituna
-            const userCountry = data.country_code ? data.country_code.toUpperCase() : "";
+        console.log("[GLOBAL EVENT ENGINE] Saatu paikannusdata:", data);
+        
+        if (data && data.status === "success") {
+            // KORJAUS: ip-api.com palauttaa maakoodin kentässä "countryCode" (esim. "FI")
+            const userCountry = data.countryCode ? data.countryCode.toUpperCase() : "";
             const userCity = data.city ? data.city.trim().toLowerCase().replace(/[^a-zA-Z0-9]/g, "-").replace(/-+/g, "-") : "";
 
             // Sallitut maat: JP (Japani), SE (Ruotsi), ES (Espanja), FI (Suomi)
@@ -92,12 +95,18 @@ async function checkWizardFestAccess() {
 
             // Jos pelaaja on sallitussa maassa TAI kaupunki on New York, ohjataan Wizard Festiin
             if (allowedCountries.includes(userCountry) || userCity === targetCity) {
-                console.log(`[GLOBAL EVENT ENGINE] Redirecting player to Wizard Fest from: ${data.city || data.country_name}`);
+                console.log(`[GLOBAL EVENT ENGINE] Redirecting player to Wizard Fest from: ${data.city || data.country}`);
                 window.location.href = "wizardfest.html";
+            } else {
+                console.log(`[GLOBAL EVENT ENGINE] Pelaaja maasta ${userCountry} / kaupungista ${userCity} ei oikeutettu siirtoon.`);
             }
+        } else {
+            console.log("[GLOBAL EVENT ENGINE] API-vastaus epäonnistui tai oli tyhjä.");
         }
     } catch (e) {
-        console.error("[GLOBAL EVENT ENGINE ERROR] Geolocation lookup failed: ", e);
+        // Jos haku epäonnistuu (esim. AdBlock estää), tulostetaan virhe konsoliin, 
+        // mutta ei kaadeta sivua tai tehdä hätäohjauksia.
+        console.error("[GLOBAL EVENT ENGINE ERROR] Geolocation lookup failed (AdBlocker?): ", e);
     }
 }
 
