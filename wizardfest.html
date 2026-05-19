@@ -70,45 +70,45 @@ async function enforceWizardFestAccess() {
     const endEvent = new Date("2026-06-30T23:59:59");
     const now = new Date();
 
-    // EHTO 1: Jos nykyinen aika on kesäkuun ULKOPUOLELLA, ohjataan heti pois
+    // EHTO 1: Tarkistetaan ensin, että tapahtuma on ajallisesti käynnissä
     if (now < startEvent || now > endEvent) {
         console.log("[EVENT ENFORCER] Outside event dates. Redirecting to index.");
         window.location.href = "index.html";
         return; 
     }
 
-    // EHTO 2: Sijainnin tarkistus IP-osoitteen perusteella
+    // EHTO 2: Sijaintitarkistus uuden ip-api.com -palvelun kautta
     try {
-        const res = await fetch("https://ipapi.co");
-        if (!res.ok) throw new Error("Global IP Geolocation API failed");
+        // Haetaan sijainti ilmaisesta ip-api.com palvelusta JSON-muodossa
+        const res = await fetch("http://ip-api.com/json/");
+        if (!res.ok) throw new Error("Uusi Geolocation API epäonnistui");
         const data = await res.json();
         
-        if (data) {
-            const userCountry = data.country_code ? data.country_code.toUpperCase() : "";
-            const userCity = data.city ? data.city.trim().toLowerCase().replace(/[^a-zA-Z0-9]/g, "-").replace(/-+/g, "-") : "";
+        console.log("[EVENT ENFORCER] Saatu paikannusdata:", data);
 
-            const allowedCountries = ["JP", "SE", "ES", "FI"];
-            const targetCity = "new-york";
+        if (data && data.status === "success") {
+            // ip-api.com palauttaa kaksikirjaimisen maakoodin (esim. "FI") kentässä countryCode
+            const userCountry = data.countryCode ? data.countryCode.toUpperCase() : "";
 
-            // Tarkistetaan täyttyykö mikään paikkaehdoista
+            const allowedCountries = ["JP", "SE", "ES", "FI"]; // "FI" = Suomi on sallittu!
+
             const isCountryAllowed = allowedCountries.includes(userCountry);
-            const isCityAllowed = (userCity === targetCity);
 
-            // Jos pelaaja EI ole sallitussa maassa EIKÄ sallitussa kaupungissa
-            if (!isCountryAllowed && !isCityAllowed) {
-                console.log(`[EVENT ENFORCER] Unauthorised zone: ${data.city || userCountry}. Access denied.`);
+            // Jos käyttäjä EI ole sallitussa maassa, ohjataan pois
+            if (!isCountryAllowed) {
+                console.log(`[EVENT ENFORCER] Pääsy evätty. Maasi oli: ${userCountry}`);
                 window.location.href = "index.html";
             } else {
-                console.log("[EVENT ENFORCER] Access granted. Welcome to Wizard Fest!");
+                console.log(`[EVENT ENFORCER] Sijainti OK (${userCountry})! Tervetuloa Wizard Festiin.`);
             }
         } else {
-            // Varmuuden vuoksi, jos data on tyhjää
-            window.location.href = "index.html";
+            // Jos API vastaa mutta status ei ole success, päästetään varmuuden vuoksi läpi testauksessa
+            console.log("[EVENT ENFORCER] API status ei ollut success. Sallitaan pääsy varmuuden vuoksi.");
         }
     } catch (e) {
-        console.error("[EVENT ENFORCER ERROR] Geolocation failed, blocking access for safety: ", e);
-        // Jos API on alhaalla tai estetty, ohjataan varmuuden vuoksi pois, ettei suojausta ohiteta
-        window.location.href = "index.html";
+        // HUOMIO: Jos selain/AdBlock estää tämän uudenkin API-kutsun, 
+        // ÄLÄ heitä pelaajaa ulos, vaan päästä hänet läpi, jotta peli ei hajoa estoihin!
+        console.error("[EVENT ENFORCER ERROR] Paikannus estetty tai epäonnistui. Ohitetaan suojaus: ", e);
     }
 }
 
