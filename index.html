@@ -2978,3 +2978,55 @@ window.addEventListener("devicemotion", (event) => {
     }
 });
 </script>
+
+
+<script>
+
+// TIMESTAMPS
+    
+
+// =============================================================================
+// =============================================================================
+// FIREBASE-SAFE SPHERE WIZARD TIMESTAMP ID GENERATOR
+// =============================================================================
+(function() {
+    // Varmistetaan että inventory on olemassa
+    if (typeof inventory === 'undefined') return;
+
+    const originalPush = inventory.push;
+    
+    // Määritetään push uusiksi siten, että se on "hidden" (enumerable: false)
+    // Tämän ansiosta Firebase ja JSON.stringify hyppäävät sen yli, eivätkä näe funktiota!
+    Object.defineProperty(inventory, 'push', {
+        value: function(...args) {
+            args.forEach(item => {
+                // Tarkistetaan, että kyseessä on velho-objekti eikä järjestelmädataa
+                if (item && typeof item === 'object' && !item.isXpTracker) {
+                    
+                    // Tarkistetaan, onko kyseessä perus-velho, jolla ID on pelkkä numero
+                    const isSphereWizard = typeof item.id === 'number' || !isNaN(item.id);
+                    
+                    if (isSphereWizard) {
+                        const preciseTimestamp = Date.now();
+                        
+                        // Korvataan numero-ID uudella uniikilla aikaleimalla
+                        item.id = "wizard-" + preciseTimestamp;
+                        
+                        // Lisätään selkeä luontipäivämäärä talteen
+                        item.caughtAt = new Date(preciseTimestamp).toISOString();
+                    }
+                }
+            });
+            
+            // Suoritetaan alkuperäinen push-toiminto
+            return originalPush.apply(this, args);
+        },
+        writable: true,
+        configurable: true,
+        enumerable: false // KRIITTINEN: Piilottaa funktion Firebasen tarkistukselta!
+    });
+    
+    console.log("⏱️ Firebase-Safe Sphere Wizard Hook active.");
+})();
+
+</script>
