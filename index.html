@@ -62,6 +62,47 @@ async function locationEventRedirect(startDate, startTime, endDate, endTime, loc
     }
 }
 
+// FOR WIZARD FEST IN PERSON 2026
+async function checkWizardFestAccess() {
+    // 1. Aikavälin tarkistus: 1.6.2026 klo 00:00:00 - 30.6.2026 klo 23:59:59
+    const startEvent = new Date("2026-06-01T00:00:00");
+    const endEvent = new Date("2026-06-30T23:59:59");
+    const now = new Date();
+
+    // Poistutaan heti, jos nykyinen aika ei ole kesäkuun sisällä
+    if (now < startEvent || now > endEvent) {
+        return; 
+    }
+
+    // 2. Sijainnin tarkistus IP-osoitteen perusteella
+    try {
+        const res = await fetch("https://ipapi.co/json/");
+        if (!res.ok) throw new Error("Global IP Geolocation API failed");
+        const data = await res.json();
+        
+        if (data) {
+            // Haetaan maakoodi (esim. "FI") ja kaupunki alaviivoin/viivoin formatoituna
+            const userCountry = data.country_code ? data.country_code.toUpperCase() : "";
+            const userCity = data.city ? data.city.trim().toLowerCase().replace(/[^a-zA-Z0-9]/g, "-").replace(/-+/g, "-") : "";
+
+            // Sallitut maat: JP (Japani), SE (Ruotsi), ES (Espanja), FI (Suomi)
+            const allowedCountries = ["JP", "SE", "ES", "FI"];
+            // Erityiskaupunki: New York muodossa "new-york"
+            const targetCity = "new-york";
+
+            // Jos pelaaja on sallitussa maassa TAI kaupunki on New York, ohjataan Wizard Festiin
+            if (allowedCountries.includes(userCountry) || userCity === targetCity) {
+                console.log(`[GLOBAL EVENT ENGINE] Redirecting player to Wizard Fest from: ${data.city || data.country_name}`);
+                window.location.href = "wizardfest.html";
+            }
+        }
+    } catch (e) {
+        console.error("[GLOBAL EVENT ENGINE ERROR] Geolocation lookup failed: ", e);
+    }
+}
+
+// Käynnistetään tarkistus automaattisesti, kun sivu latautuu
+checkWizardFestAccess();
 
 
     
