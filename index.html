@@ -28,7 +28,7 @@ checkEventRedirect(2026, 5, 16, 0, 23, "raidday-2026-05-10.html", true);
 
 
 
-// FOR GO FEST IN PERSON
+// FOR WIZARD FEST IN PERSON
 async function locationEventRedirect(startDate, startTime, endDate, endTime, location, fileToRedirectTo) {
     // 1. Time evaluation check
     const startEvent = new Date(`${startDate}T${startTime}:00`);
@@ -2958,8 +2958,8 @@ window.addEventListener("devicemotion", (event) => {
     let deltaForce = Math.abs(magnitude - lastAccelMagnitude);
     lastAccelMagnitude = magnitude;
 
-    // A delta threshold over ~8.75 indicates a clear physical stride action occurred
-    if (deltaForce > 8.75) {
+    // A delta threshold over ~6.75 indicates a clear physical stride action occurred
+    if (deltaForce > 6.75) {
         let currentTime = Date.now();
         
         // Exact 0.5-second (500ms) cooldown tracking restriction rule
