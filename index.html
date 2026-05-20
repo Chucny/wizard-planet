@@ -2843,14 +2843,7 @@ async function locateUserCountry() {
     return "Global-Lobby"; 
 }
 
-// =============================================================================
-// SILTASYSTEEMI: OHJATAAN VANHA CITY-HAKU AUTOMAATTISESTI MAAHAN
-// =============================================================================
-async function locateUserCity() {
-    console.log("[SILTA] Painike kutsui vanhaa locateUserCity-funktiota. Ohjataan haku maahan...");
-    // Kutsutaan ylempänä olevaa uutta funktiota
-    return await locateUserCountry();
-}
+
 // =============================================================================
 // SILTASYSTEEMI: OHJATAAN VANHA CITY-HAKU AUTOMAATTISESTI MAAHAN
 // =============================================================================
