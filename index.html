@@ -2710,71 +2710,34 @@ function getNearestCity(lat, lon) {
 // ============================================================================
 // GLOBAL HIGH-PRECISION IP GEOLOCATION ENGINE
 // ============================================================================
-async function locateUserCity() {
-    // List of reliable global IP geolocation endpoints to fall back on sequentially
-    // Priority 1: ip-api.com (SSL-fallback/Pro configuration)
-    // Priority 2: ipapi.co (Global standard HTTPS payload)
-    const endpoints = [
-        "https://ipapi.co/json/",
-        "https://api. things-api / or similar proxy", // placeholder reminder if you acquire an API token
-        "http://ip-api.com/json/" // Note: Browsers block unencrypted HTTP fetches on HTTPS sites!
-    ];
-
-    // Try primary high-accuracy retrieval loop
-    try {
-        // We use ipapi.co via secure HTTPS for native cross-origin compatibility
-        const res = await fetch("https://ipapi.co/json/");
-        if (!res.ok) throw new Error("Primary API payload failed");
-        
-        const data = await res.json();
-        
-        if (data && data.city) {
-            let cleanCity = data.city.trim();
-            
-            console.log(`[GLOBAL IP ENGINE] Verified Geolocation: ${cleanCity}, ${data.country_name || ''}`);
-            
-            // Replaces spaces, commas, and special characters with hyphens globally 
-            // e.g., "New York" -> "New-York", "Kyoto, Japan" -> "Kyoto--Japan"
-            return cleanCity.replace(/[^a-zA-Z0-9]/g, "-").replace(/-+/g, "-");
-        }
-    } catch (e) {
-        console.warn("[GLOBAL IP ENGINE] Primary endpoint failed, attempting secondary mirror...", e);
-    }
-
-    // Secondary Backup Provider Loop (If primary is rate-limited or blocked)
-    try {
-        const backupRes = await fetch("http://ip-api.com/json/");
-        const backupData = await backupRes.json();
-        
-        if (backupData && backupData.city) {
-            return backupData.city.trim().replace(/[^a-zA-Z0-9]/g, "-").replace(/-+/g, "-");
-        }
-    } catch (err) {
-        console.error("[GLOBAL IP ENGINE CRITICAL] All IP lookup providers failed: ", err);
-    }
-
-    // Ultimate Safe Fallback so the game doesn't crash if the player is entirely offline/blocked
-    return "Global-Lobby"; 
-}
-
-// 4. Override MQTT network actions with working Raid Pass validation rules
 window.connectMQTT = function(code) {
     if (raidPasses > 0) {
-        raidPasses -= 1; // Deduct one valid pass safely
-        updateSensorPassUI(); // Refresh UI values instantly
+        
+        // Varmistetaan, että käytetään maata. Jos 'code' on jostain syystä kaupunki, 
+        // käytetään window.currentCountry -muuttujaa jos se on saatavilla.
+        let countryCode = window.currentCountry || code || "Global-Lobby";
+        
+        // Siivotaan mahdolliset välilyönnit kokonaan pois MQTT-aihepiiriä varten
+        if (typeof countryCode === 'string') {
+            countryCode = countryCode.replace(/\s+/g, '');
+        }
+
+        raidPasses -= 1; // Vähennetään yksi passi turvallisesti
+        updateSensorPassUI(); // Päivitetään käyttöliittymä heti
         
         if (mqttClient) mqttClient.end();
         mqttClient = mqtt.connect(MQTT_BROKER, { keepalive: 30 });
         
         mqttClient.on('connect', () => {
-            console.log("Connected to city room topic:", code);
-            mqttClient.subscribe(RAID_TOPIC_PREFIX + code);
+            // Yhdistetään varmasti maakohtaiseen huoneeseen
+            console.log("Connected to country room topic:", countryCode);
+            mqttClient.subscribe(RAID_TOPIC_PREFIX + countryCode);
             
-            // Distributed check: Ping to see if another player is hosting this city
+            // Distributed check: Pingataan, onko joku muu jo pystyttänyt raidin tässä maassa
             if (!raidHost) {
-                mqttClient.publish(RAID_TOPIC_PREFIX + code, JSON.stringify({ type: "pingRaid" }));
+                mqttClient.publish(RAID_TOPIC_PREFIX + countryCode, JSON.stringify({ type: "pingRaid" }));
             } else {
-                mqttClient.publish(RAID_TOPIC_PREFIX + code, JSON.stringify({ type: "raidState", raid: raidActive }));
+                mqttClient.publish(RAID_TOPIC_PREFIX + countryCode, JSON.stringify({ type: "raidState", raid: raidActive }));
             }
         });
 
@@ -2782,21 +2745,21 @@ window.connectMQTT = function(code) {
             try {
                 const msg = JSON.parse(payload.toString());
                 
-                // Active Hosts respond to pings by transmitting their state immediately
+                // Aktiiviset isännät vastaavat pingauksiin välittömästi
                 if (msg.type === "pingRaid" && raidHost && raidActive) {
-                    mqttClient.publish(RAID_TOPIC_PREFIX + code, JSON.stringify({ type: "raidState", raid: raidActive }));
+                    mqttClient.publish(RAID_TOPIC_PREFIX + countryCode, JSON.stringify({ type: "raidState", raid: raidActive }));
                     return;
                 }
                 
-                // If a state arrives from a host, joiners intercept it
+                // Jos huoneeseen saapuu raidin tila isännältä, liittyjät kaappaavat sen
                 if (msg.type === "raidState") {
                     if (!raidHost) {
                         if (!raidFound) {
                             raidFound = true;
-                            clearTimeout(checkTimeout); // Cancel automatic hosting flow
+                            clearTimeout(checkTimeout); // Perutaan automaattinen isännöintijono
                             document.getElementById("customRaidMenuModal").style.display = "none";
                             
-                            mqttClient.publish(RAID_TOPIC_PREFIX + code, JSON.stringify({
+                            mqttClient.publish(RAID_TOPIC_PREFIX + countryCode, JSON.stringify({
                                 type: "joinRaid",
                                 playerName: window.playerName || "Guest", 
                                 wizards: Array.from({length: 6}, (_, i) => ({ name: `Wizard-${i + 1}`, damagePerSec: 5 }))
@@ -2808,12 +2771,14 @@ window.connectMQTT = function(code) {
                     }
                 }
                 
+                // Kun joku toinen saman maan pelaaja liittyy pystyttämääsi raidiin
                 if (msg.type === "joinRaid" && raidHost && raidActive) {
                     if (raidActive.players.length >= MAX_PLAYERS) return;
                     if (!raidActive.players.some(p => p.name === msg.playerName)) {
                         raidActive.players.push({ name: msg.playerName, wizards: msg.wizards });
-                        mqttClient.publish(RAID_TOPIC_PREFIX + code, JSON.stringify({ type: "raidState", raid: raidActive }));
-                        alert(msg.playerName + " joined your city raid!");
+                        mqttClient.publish(RAID_TOPIC_PREFIX + countryCode, JSON.stringify({ type: "raidState", raid: raidActive }));
+                        
+                        alert(msg.playerName + " joined your country raid!");
                     }
                 }
                 
@@ -2834,6 +2799,59 @@ window.connectMQTT = function(code) {
         if (greenActionBtn) greenActionBtn.disabled = false;
     }
 };
+    // =============================================================================
+// GLOBAL COUNTRY GEOLOCATION ENGINE (UUSI)
+// =============================================================================
+async function locateUserCountry() {
+    try {
+        // Ensisijainen haku suojatun HTTPS-yhteyden kautta
+        const res = await fetch("https://ipapi.co/json/");
+        if (!res.ok) throw new Error("Primary API payload failed");
+        
+        const data = await res.json();
+        
+        // Luetaan maan nimi (esim. "Finland" tai "United Kingdom")
+        if (data && (data.country_name || data.country)) {
+            let country = (data.country_name || data.country).trim();
+            console.log(`[GLOBAL IP ENGINE] Verified Country Geolocation: ${country}`);
+            
+            // Tallennetaan globaali muuttuja connectMQTT-funktiota varten
+            window.currentCountry = country;
+            
+            // Siivotaan erikoismerkit pois (esim. "United Kingdom" -> "United-Kingdom")
+            return country.replace(/[^a-zA-Z0-9]/g, "-").replace(/-+/g, "-");
+        }
+    } catch (e) {
+        console.warn("[GLOBAL IP ENGINE] Primary endpoint failed, attempting secondary mirror...", e);
+    }
+
+    // Toissijainen varajärjestelmä (HTTP Fallback)
+    try {
+        const backupRes = await fetch("http://ip-api.com/json/");
+        const backupData = await backupRes.json();
+        
+        if (backupData && backupData.country) {
+            let country = backupData.country.trim();
+            window.currentCountry = country;
+            return country.replace(/[^a-zA-Z0-9]/g, "-").replace(/-+/g, "-");
+        }
+    } catch (err) {
+        console.error("[GLOBAL IP ENGINE CRITICAL] All IP lookup providers failed: ", err);
+    }
+
+    // Jos netti on kokonaan poikki, käytetään tätä yleistä huonetta
+    return "Global-Lobby"; 
+}
+
+
+// =============================================================================
+// SILTASYSTEEMI: OHJATAAN VANHA CITY-HAKU AUTOMAATTISESTI MAAHAN
+// =============================================================================
+async function locateUserCity() {
+    console.log("[SILTA] Painike kutsui vanhaa locateUserCity-funktiota. Ohjataan haku maahan...");
+    // Kutsutaan uutta maakohtaista funktiota ja palautetaan sen tulos suoraan painikkeelle
+    return await locateUserCountry();
+}
 
 // 5. UI Presentation Update Routine
 function updateSensorPassUI() {
