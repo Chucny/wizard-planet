@@ -20,9 +20,101 @@ function checkEventRedirect(year, month, day, startH, endH, targetFile, redirect
     }
 }
 
+// OLD EVENTS
 checkEventRedirect(2026, 5, 3, 0, 23, "hatchday.html", true);
-
 checkEventRedirect(2026, 5, 16, 0, 23, "raidday-2026-05-10.html", true);
+
+
+
+
+
+// FOR WIZARD FEST IN PERSON
+async function locationEventRedirect(startDate, startTime, endDate, endTime, location, fileToRedirectTo) {
+    // 1. Time evaluation check
+    const startEvent = new Date(`${startDate}T${startTime}:00`);
+    const endEvent = new Date(`${endDate}T${endTime}:59`);
+    const now = new Date();
+
+    // Guard clause: Exit instantly if the current time isn't inside the event schedule
+    if (now < startEvent || now > endEvent) {
+        return; 
+    }
+
+    // 2. High-Precision Global IP Geolocation Check
+    try {
+        const res = await fetch("https://ipapi.co/json/");
+        if (!res.ok) throw new Error("Global IP Geolocation API failed");
+        const data = await res.json();
+        
+        if (data && data.city) {
+            // Global formatting: Trim whitespace, convert to lowercase, and replace special characters/spaces with a hyphen
+            // Example: "New York" becomes "new-york", "Madrid " becomes "madrid"
+            const userCity = data.city.trim().toLowerCase().replace(/[^a-zA-Z0-9]/g, "-").replace(/-+/g, "-");
+            const targetCity = location.trim().toLowerCase().replace(/[^a-zA-Z0-9]/g, "-").replace(/-+/g, "-");
+            
+            if (userCity === targetCity) {
+                console.log(`[GLOBAL EVENT ENGINE] Redirecting player found in active zone: ${data.city}`);
+                window.location.href = fileToRedirectTo;
+            }
+        }
+    } catch (e) {
+        console.error("[GLOBAL EVENT ENGINE ERROR] Geolocation lookup failed: ", e);
+    }
+}
+
+// FOR WIZARD FEST IN PERSON 2026
+async function checkWizardFestAccess() {
+    // 1. Aikavälin tarkistus: 1.6.2026 klo 00:00:00 - 30.6.2026 klo 23:59:59
+    const startEvent = new Date("2026-06-01T00:00:00");
+    const endEvent = new Date("2026-06-30T23:59:59");
+    const now = new Date();
+
+    // Poistutaan heti, jos nykyinen aika ei ole kesäkuun sisällä
+    if (now < startEvent || now > endEvent) {
+        return; 
+    }
+
+    // 2. Sijainnin tarkistus uuden luotettavan IP-osoitteen perusteella
+    try {
+        // Vaihdettu toimivaksi todettuun ip-api.com -palveluun
+        const res = await fetch("http://ip-api.com/json/");
+        if (!res.ok) throw new Error("Global IP Geolocation API failed");
+        const data = await res.json();
+        
+        console.log("[GLOBAL EVENT ENGINE] Saatu paikannusdata:", data);
+        
+        if (data && data.status === "success") {
+            // KORJAUS: ip-api.com palauttaa maakoodin kentässä "countryCode" (esim. "FI")
+            const userCountry = data.countryCode ? data.countryCode.toUpperCase() : "";
+            const userCity = data.city ? data.city.trim().toLowerCase().replace(/[^a-zA-Z0-9]/g, "-").replace(/-+/g, "-") : "";
+
+            // Sallitut maat: JP (Japani), SE (Ruotsi), ES (Espanja), FI (Suomi)
+            const allowedCountries = ["JP", "SE", "ES", "FI"];
+            // Erityiskaupunki: New York muodossa "new-york"
+            const targetCity = "new-york";
+
+            // Jos pelaaja on sallitussa maassa TAI kaupunki on New York, ohjataan Wizard Festiin
+            if (allowedCountries.includes(userCountry) || userCity === targetCity) {
+                console.log(`[GLOBAL EVENT ENGINE] Redirecting player to Wizard Fest from: ${data.city || data.country}`);
+                window.location.href = "wizardfest.html";
+            } else {
+                console.log(`[GLOBAL EVENT ENGINE] Pelaaja maasta ${userCountry} / kaupungista ${userCity} ei oikeutettu siirtoon.`);
+            }
+        } else {
+            console.log("[GLOBAL EVENT ENGINE] API-vastaus epäonnistui tai oli tyhjä.");
+        }
+    } catch (e) {
+        // Jos haku epäonnistuu (esim. AdBlock estää), tulostetaan virhe konsoliin, 
+        // mutta ei kaadeta sivua tai tehdä hätäohjauksia.
+        console.error("[GLOBAL EVENT ENGINE ERROR] Geolocation lookup failed (AdBlocker?): ", e);
+    }
+}
+
+// Käynnistetään tarkistus automaattisesti, kun sivu latautuu
+checkWizardFestAccess();
+
+
+    
 </script>
 <head>
 
@@ -35,49 +127,9 @@ checkEventRedirect(2026, 5, 16, 0, 23, "raidday-2026-05-10.html", true);
 
     
 <script src="somevars.js"></script>
-<script>
-/**
- * Redirects the user if the current time falls within a specific window 
- * AND their IP location matches a specific city target.
- *
- * @param {string} startDate        - Format: "YYYY-MM-DD" (e.g., "2026-06-01")
- * @param {string} startTime        - Format: "HH:MM" (e.g., "00:00")
- * @param {string} endDate          - Format: "YYYY-MM-DD" (e.g., "2026-06-30")
- * @param {string} endTime          - Format: "HH:MM" (e.g., "23:59")
- * @param {string} location         - Single city name string (e.g., "Madrid")
- * @param {string} fileToRedirectTo - Destination URL/HTML file (e.g., "wizardfest.html")
- */
-async function locationEventRedirect(startDate, startTime, endDate, endTime, location, fileToRedirectTo) {
-    // 1. Parse dates using local ISO formatting strings
-    const startEvent = new Date(`${startDate}T${startTime}:00`);
-    const endEvent = new Date(`${endDate}T${endTime}:59`);
-    const now = new Date();
 
-    // 2. Timeline Guard Clause: Check if the event window is currently active
-    if (now < startEvent || now > endEvent) {
-        return; 
-    }
 
-    // 3. Location Evaluation: Fetch the user's IP tracking parameters
-    try {
-        const res = await fetch("https://ipapi.co/json/");
-        if (!res.ok) throw new Error("IP Geolocation API failed");
-        const data = await res.json();
-        
-        if (data && data.city) {
-            // Normalize both string inputs to prevent capitalization failures
-            const userCity = data.city.trim().toLowerCase();
-            const targetCity = location.trim().toLowerCase();
-            
-            if (userCity === targetCity) {
-                console.log(`[EVENT ENGINE] Located inside ${data.city} during active event hours! Redirecting...`);
-                window.location.href = fileToRedirectTo;
-            }
-        }
-    } catch (e) {
-        console.error("[EVENT ENGINE ERROR] Geolocation lookup processing failed: ", e);
-    }
-}</script>
+
 
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -1330,6 +1382,8 @@ const settingsHTML = `
     <div id="settingsMenu" style="display:none; position:fixed; top:125px; left:20px; background:white; padding:15px; border-radius:15px; box-shadow:0 5px 20px rgba(0,0,0,0.3); z-index:10000; min-width:150px;">
         <h4 style="margin:0 0 15px 0; font-size:14px; color:#333; text-align:center;">Settings</h4>
         <button id="finalDeleteBtn" class="danger-zone-btn" style="width:100%; background:#ff4757; color:white; border:none; padding:10px; border-radius:5px; font-weight:bold; cursor:pointer;">DELETE ACCOUNT</button>
+        <br><a href="https://chucny.github.io/wizard-planet/TOS.html" style="color:grey;">Terms of Service</a> 
+        <br><a href="https://chucny.github.io/wizard-planet/support.html" style="color:grey;">Support</a>
     </div>
 `;
 document.body.insertAdjacentHTML('beforeend', settingsHTML);
@@ -2394,19 +2448,15 @@ WIZARD FEST 2026!
 
 </h2></div><div style="padding:30px;color:#34495e;"><p style="font-size:17px;line-height:1.6;margin-bottom:20px;"><b>
 
-WIZARD FEST 2026!
+Wizard Fest 2026 comes and 4-corner Polygon debuts!
 
 </b><br>
 
-In June 2026, there's Wizard Fest 2026! <br>
-<h3>Destinations for Wizard Fest this year:</h3><br>
-Helsinki, Finland<br>
-Madrid, Spain<br>
-New York, USA<br>
-Karlstad, Sweden<br>
-Tokyo, Japan<br>
-<br><h3>Wizard Fest 2026: Global</h3><br>
-June 15th-30th 2026<br>
+In June 2026, it is Wizard Fest 2026! Experience Wizard Fest in-person to in following cities and catch grey, in-person exclusive shiny Polygons: Helsinki, Karlstad, Tokyo, New York and Madrid!<br>
+<h3>Wizard Fest: Global!</h3>
+Experience Wizard Fest 2026: Global during 15th June to 30th June! 
+Note: grey Polygon is not availble during Wizard Fest 2026: Global.
+
 </p><div style="background:#fef9e7;padding:15px;border-radius:15px;font-size:14px;color:#7d6608;border:1px solid #f9e79f;font-weight:bold;">
 
 Join <b>Wizard Fest 2026</b> in June!
@@ -2657,36 +2707,54 @@ function getNearestCity(lat, lon) {
     return nearest.name;
 }
 
-// 3. IP Location API fetching with fallbacks
+// ============================================================================
+// GLOBAL HIGH-PRECISION IP GEOLOCATION ENGINE
+// ============================================================================
 async function locateUserCity() {
+    // List of reliable global IP geolocation endpoints to fall back on sequentially
+    // Priority 1: ip-api.com (SSL-fallback/Pro configuration)
+    // Priority 2: ipapi.co (Global standard HTTPS payload)
+    const endpoints = [
+        "https://ipapi.co/json/",
+        "https://api. things-api / or similar proxy", // placeholder reminder if you acquire an API token
+        "http://ip-api.com/json/" // Note: Browsers block unencrypted HTTP fetches on HTTPS sites!
+    ];
+
+    // Try primary high-accuracy retrieval loop
     try {
+        // We use ipapi.co via secure HTTPS for native cross-origin compatibility
         const res = await fetch("https://ipapi.co/json/");
-        if (!res.ok) throw new Error("IP Geolocation API failed");
+        if (!res.ok) throw new Error("Primary API payload failed");
+        
         const data = await res.json();
-        if (data.city) {
-            return data.city.replace(/[^a-zA-Z0-9]/g, "-");
-        }
-        if (data.latitude && data.longitude) {
-            return getNearestCity(data.latitude, data.longitude);
+        
+        if (data && data.city) {
+            let cleanCity = data.city.trim();
+            
+            console.log(`[GLOBAL IP ENGINE] Verified Geolocation: ${cleanCity}, ${data.country_name || ''}`);
+            
+            // Replaces spaces, commas, and special characters with hyphens globally 
+            // e.g., "New York" -> "New-York", "Kyoto, Japan" -> "Kyoto--Japan"
+            return cleanCity.replace(/[^a-zA-Z0-9]/g, "-").replace(/-+/g, "-");
         }
     } catch (e) {
-        console.log("IP Geolocation failed, trying high-accuracy GPS fallback...", e);
+        console.warn("[GLOBAL IP ENGINE] Primary endpoint failed, attempting secondary mirror...", e);
     }
 
-    // Secondary fallback to native high accuracy GPS coordinates if available
-    return new Promise((resolve) => {
-        if (navigator.geolocation) {
-            navigator.geolocation.getCurrentPosition(
-                (pos) => {
-                    resolve(getNearestCity(pos.coords.latitude, pos.coords.longitude));
-                },
-                () => { resolve("Helsinki"); }, // Global standard ultimate fallback
-                { timeout: 4000 }
-            );
-        } else {
-            resolve("Helsinki");
+    // Secondary Backup Provider Loop (If primary is rate-limited or blocked)
+    try {
+        const backupRes = await fetch("http://ip-api.com/json/");
+        const backupData = await backupRes.json();
+        
+        if (backupData && backupData.city) {
+            return backupData.city.trim().replace(/[^a-zA-Z0-9]/g, "-").replace(/-+/g, "-");
         }
-    });
+    } catch (err) {
+        console.error("[GLOBAL IP ENGINE CRITICAL] All IP lookup providers failed: ", err);
+    }
+
+    // Ultimate Safe Fallback so the game doesn't crash if the player is entirely offline/blocked
+    return "Global-Lobby"; 
 }
 
 // 4. Override MQTT network actions with working Raid Pass validation rules
@@ -2892,8 +2960,8 @@ window.addEventListener("devicemotion", (event) => {
     let deltaForce = Math.abs(magnitude - lastAccelMagnitude);
     lastAccelMagnitude = magnitude;
 
-    // A delta threshold over ~11.5 indicates a clear physical stride action occurred
-    if (deltaForce > 11.5) {
+    // A delta threshold over ~6.75 indicates a clear physical stride action occurred
+    if (deltaForce > 6.75) {
         let currentTime = Date.now();
         
         // Exact 0.5-second (500ms) cooldown tracking restriction rule
@@ -2911,4 +2979,56 @@ window.addEventListener("devicemotion", (event) => {
         }
     }
 });
+</script>
+
+
+<script>
+
+// TIMESTAMPS
+    
+
+// =============================================================================
+// =============================================================================
+// FIREBASE-SAFE SPHERE WIZARD TIMESTAMP ID GENERATOR
+// =============================================================================
+(function() {
+    // Varmistetaan että inventory on olemassa
+    if (typeof inventory === 'undefined') return;
+
+    const originalPush = inventory.push;
+    
+    // Määritetään push uusiksi siten, että se on "hidden" (enumerable: false)
+    // Tämän ansiosta Firebase ja JSON.stringify hyppäävät sen yli, eivätkä näe funktiota!
+    Object.defineProperty(inventory, 'push', {
+        value: function(...args) {
+            args.forEach(item => {
+                // Tarkistetaan, että kyseessä on velho-objekti eikä järjestelmädataa
+                if (item && typeof item === 'object' && !item.isXpTracker) {
+                    
+                    // Tarkistetaan, onko kyseessä perus-velho, jolla ID on pelkkä numero
+                    const isSphereWizard = typeof item.id === 'number' || !isNaN(item.id);
+                    
+                    if (isSphereWizard) {
+                        const preciseTimestamp = Date.now();
+                        
+                        // Korvataan numero-ID uudella uniikilla aikaleimalla
+                        item.id = "wizard-" + preciseTimestamp;
+                        
+                        // Lisätään selkeä luontipäivämäärä talteen
+                        item.caughtAt = new Date(preciseTimestamp).toISOString();
+                    }
+                }
+            });
+            
+            // Suoritetaan alkuperäinen push-toiminto
+            return originalPush.apply(this, args);
+        },
+        writable: true,
+        configurable: true,
+        enumerable: false // KRIITTINEN: Piilottaa funktion Firebasen tarkistukselta!
+    });
+    
+    console.log("⏱️ Firebase-Safe Sphere Wizard Hook active.");
+})();
+
 </script>
