@@ -2465,4 +2465,190 @@ Join <b>Wizard Fest 2026</b> in June!
 
 
 
+<script>
+// =============================================================================
+// RAID TICKET SYSTEM (XP_TRACKER METADATA ALIGNED - AUTO-SAVE COMPATIBLE)
+// =============================================================================
+(function() {
+    console.log("🎫 Initializing Tracker-Aligned Raid Ticket Ledger...");
+
+    // 1. Helper function to find the EXISTING metadata tracker item in your inventory
+    function getMetadataTracker() {
+        if (typeof inventory === 'undefined' || !Array.isArray(inventory)) {
+            console.warn("Inventory array not found yet.");
+            return null;
+        }
+        
+        // Locate the existing system tracker structure from your database login payload
+        let tracker = inventory.find(item => item && item.id === "XP_TRACKER" && item.isXpTracker === true);
+        
+        if (tracker) {
+            // Check if the passes attribute exists inside it. If not, create it!
+            if (typeof tracker.raidTickets === 'undefined') {
+                tracker.raidTickets = 0;
+                console.log("📦 Created missing 'raidTickets' attribute inside existing metadata tracker.");
+            }
+            return tracker;
+        }
+        
+        return null;
+    }
+
+    // Pedometer tracking states
+    let stepsTowardsNextTicket = 0;
+    const STEPS_PER_TICKET = 100;
+    let lastMagnitude = 0;
+    let stepCooldown = false;
+
+    // 2. Build Floating Circular Launch Button
+    const toggleBtn = document.createElement('button');
+    toggleBtn.id = 'ticket-ui-toggle';
+    toggleBtn.innerHTML = '🎫';
+    toggleBtn.style.position = 'fixed';
+    toggleBtn.style.left = '20px';
+    toggleBtn.style.bottom = '130px'; 
+    toggleBtn.style.width = '54px';
+    toggleBtn.style.height = '54px';
+    toggleBtn.style.borderRadius = '50%';
+    toggleBtn.style.backgroundColor = '#4a90e2';
+    toggleBtn.style.border = '3px solid #fff';
+    toggleBtn.style.color = '#fff';
+    toggleBtn.style.fontSize = '22px';
+    toggleBtn.style.cursor = 'pointer';
+    toggleBtn.style.boxShadow = '0 4px 12px rgba(0,0,0,0.4)';
+    toggleBtn.style.zIndex = '100000';
+    toggleBtn.style.display = 'flex';
+    toggleBtn.style.alignItems = 'center';
+    toggleBtn.style.justifyContent = 'center';
+    toggleBtn.style.transition = 'transform 0.15s ease, background-color 0.15s ease';
+    document.body.appendChild(toggleBtn);
+
+    // 3. Build Expandable Panel
+    const ticketPanel = document.createElement('div');
+    ticketPanel.id = 'raid-ticket-panel';
+    ticketPanel.style.position = 'fixed';
+    ticketPanel.style.right = '85px';
+    ticketPanel.style.bottom = '133px';
+    ticketPanel.style.width = '220px';
+    ticketPanel.style.backgroundColor = 'rgba(22, 22, 32, 0.96)';
+    ticketPanel.style.border = '2px solid #4a90e2';
+    ticketPanel.style.borderRadius = '10px';
+    ticketPanel.style.padding = '12px';
+    ticketPanel.style.boxShadow = '0 5px 15px rgba(0,0,0,0.6)';
+    ticketPanel.style.zIndex = '99999';
+    ticketPanel.style.fontFamily = 'sans-serif';
+    ticketPanel.style.color = '#fff';
+    ticketPanel.style.display = 'none';
+
+    ticketPanel.innerHTML = `
+        <div style="font-weight: bold; font-size: 14px; color: #4a90e2; margin-bottom: 4px;">
+            Passes: <span id="ticket-count-display">0</span>
+        </div>
+        <div style="font-size: 11px; color: #ccc; margin-bottom: 6px;">
+            Steps: <span id="step-count-display">0</span> / ${STEPS_PER_TICKET}
+        </div>
+        <div style="width: 100%; background-color: #333; border-radius: 4px; height: 8px; overflow: hidden;">
+            <div id="ticket-progress-bar" style="width: 0%; height: 100%; background: linear-gradient(90deg, #4a90e2, #00ffcc); transition: width 0.2s ease;"></div>
+        </div>
+    `;
+    document.body.appendChild(ticketPanel);
+
+    toggleBtn.addEventListener('click', () => {
+        if (ticketPanel.style.display === 'none') {
+            ticketPanel.style.display = 'block';
+            toggleBtn.style.backgroundColor = '#2c5fa1';
+            toggleBtn.style.transform = 'scale(0.95)';
+        } else {
+            ticketPanel.style.display = 'none';
+            toggleBtn.style.backgroundColor = '#4a90e2';
+            toggleBtn.style.transform = 'scale(1)';
+        }
+        updateTicketUI();
+    });
+
+    // 4. Update UI View Layers
+    function updateTicketUI() {
+        const tracker = getMetadataTracker();
+        const ticketCount = tracker ? tracker.raidTickets : 0;
+        
+        document.getElementById('ticket-count-display').textContent = ticketCount;
+        document.getElementById('step-count-display').textContent = stepsTowardsNextTicket;
+        
+        const progressPercent = Math.min((stepsTowardsNextTicket / STEPS_PER_TICKET) * 100, 100);
+        document.getElementById('ticket-progress-bar').style.width = progressPercent + '%';
+    }
+
+    // 5. Gyrometer Movement Stepping Calculation
+    window.registerDeviceStep = function() {
+        stepsTowardsNextTicket += 1;
+        
+        if (typeof totalSteps !== 'undefined') {
+            totalSteps += 1;
+        }
+
+        if (stepsTowardsNextTicket >= STEPS_PER_TICKET) {
+            stepsTowardsNextTicket -= STEPS_PER_TICKET;
+            
+            const tracker = getMetadataTracker();
+            if (tracker) {
+                tracker.raidTickets += 1; // Saved cleanly inside the metadata block
+                                          // Your game's native auto-saver will pick up this change!
+                
+                if (typeof showNotification === 'function') {
+                    showNotification("🎫 Earned a Raid Pass!");
+                }
+            }
+        }
+        updateTicketUI();
+    };
+
+    if (window.DeviceMotionEvent) {
+        window.addEventListener('devicemotion', (event) => {
+            const acc = event.accelerationIncludingGravity;
+            if (!acc) return;
+
+            const magnitude = Math.sqrt(acc.x * acc.x + acc.y * acc.y + acc.z * acc.z);
+            const delta = Math.abs(magnitude - lastMagnitude);
+            lastMagnitude = magnitude;
+
+            if (delta > 4.5 && !stepCooldown) {
+                window.registerDeviceStep();
+                stepCooldown = true;
+                setTimeout(() => { stepCooldown = false; }, 400); 
+            }
+        });
+    }
+
+    // 6. Intercept Create/Join Action Handlers to spend passes from Metadata
+    if (typeof window.createRaid === 'function') {
+        const originalCreateRaid = window.createRaid;
+        window.createRaid = function() {
+            const tracker = getMetadataTracker();
+            if (!tracker || tracker.raidTickets <= 0) {
+                alert("❌ 0 Raid Passes! Walk with your phone to gain entry.");
+                return;
+            }
+            tracker.raidTickets -= 1;
+            updateTicketUI();
+            originalCreateRaid();
+        };
+    }
+
+    if (typeof window.joinRaid === 'function') {
+        const originalJoinRaid = window.joinRaid;
+        window.joinRaid = function() {
+            const tracker = getMetadataTracker();
+            if (!tracker || tracker.raidTickets <= 0) {
+                alert("❌ 0 Raid Passes! Walk with your phone to gain entry.");
+                return;
+            }
+            tracker.raidTickets -= 1;
+            updateTicketUI();
+            originalJoinRaid();
+        };
+    }
+
+    // Synchronize UI view immediately after login processing finishes
+    setTimeout(updateTicketUI, 800);
+})();</script>
 
