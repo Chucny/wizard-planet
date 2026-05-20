@@ -2811,6 +2811,51 @@ window.connectMQTT = function(code) {
         if (greenActionBtn) greenActionBtn.disabled = false;
     }
 };
+    // =============================================================================
+// GLOBAL COUNTRY GEOLOCATION ENGINE (UUSI)
+// =============================================================================
+async function locateUserCountry() {
+    try {
+        // Ensisijainen haku suojatun HTTPS-yhteyden kautta
+        const res = await fetch("https://ipapi.co/json/");
+        if (!res.ok) throw new Error("Primary API payload failed");
+        
+        const data = await res.json();
+        
+        // Luetaan maan nimi (esim. "Finland" tai "United Kingdom")
+        if (data && (data.country_name || data.country)) {
+            let country = (data.country_name || data.country).trim();
+            console.log(`[GLOBAL IP ENGINE] Verified Country Geolocation: ${country}`);
+            
+            // Tallennetaan globaali muuttuja connectMQTT-funktiota varten
+            window.currentCountry = country;
+            
+            // Siivotaan erikoismerkit pois (esim. "United Kingdom" -> "United-Kingdom")
+            return country.replace(/[^a-zA-Z0-9]/g, "-").replace(/-+/g, "-");
+        }
+    } catch (e) {
+        console.warn("[GLOBAL IP ENGINE] Primary endpoint failed, attempting secondary mirror...", e);
+    }
+
+    // Toissijainen varajärjestelmä (HTTP Fallback)
+    try {
+        const backupRes = await fetch("http://ip-api.com/json/");
+        const backupData = await backupRes.json();
+        
+        if (backupData && backupData.country) {
+            let country = backupData.country.trim();
+            window.currentCountry = country;
+            return country.replace(/[^a-zA-Z0-9]/g, "-").replace(/-+/g, "-");
+        }
+    } catch (err) {
+        console.error("[GLOBAL IP ENGINE CRITICAL] All IP lookup providers failed: ", err);
+    }
+
+    // Jos netti on kokonaan poikki, käytetään tätä yleistä huonetta
+    return "Global-Lobby"; 
+}
+
+
 // =============================================================================
 // SILTASYSTEEMI: OHJATAAN VANHA CITY-HAKU AUTOMAATTISESTI MAAHAN
 // =============================================================================
@@ -2819,6 +2864,7 @@ async function locateUserCity() {
     // Kutsutaan uutta maakohtaista funktiota ja palautetaan sen tulos suoraan painikkeelle
     return await locateUserCountry();
 }
+
     
 // 5. UI Presentation Update Routine
 function updateSensorPassUI() {
