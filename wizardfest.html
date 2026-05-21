@@ -1025,10 +1025,17 @@ document.getElementById("loginBtn").onclick = async () => {
 
     // 2. CHECK FOR COMPUTER (DESKTOP/LAPTOP)
     // Detects Windows, Mac, or Linux to identify a computer
-    const isComputer = /Windows|Macintosh|Linux/i.test(navigator.userAgent);
-    if (isComputer && !ALLOW_COMPUTER) {
-        return msg.textContent = "Unsupported device. Please use a mobile phone.";
-    }
+    
+    // 2. CHECK FOR COMPUTER (DESKTOP/LAPTOP)
+    // Detects Windows, Mac, or Linux to identify a computer
+    // 1. Check if the device explicitly supports touch points
+// Check if the UA says desktop OS AND it doesn't support touch points
+const isComputer = /Windows|Macintosh|Linux/i.test(navigator.userAgent) && 
+                   !(('ontouchstart' in window) || (navigator.maxTouchPoints > 0));
+
+if (isComputer && !ALLOW_COMPUTER) {
+    return msg.textContent = "Unsupported device. Please use a mobile phone.";
+}
 
     // 3. PROCEED WITH FIREBASE LOGIN
     const snapshot = await get(ref(db, "players/" + username));
