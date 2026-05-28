@@ -1,23 +1,21 @@
 {
   "name": "Wizard Planet",
   "short_name": "Wizard Planet",
-  "id": "/",
-  "start_url": "/?utm_source=pwa",
-  "scope": "/",
+  "id": "/wizard-planet/",
+  "start_url": "/wizard-planet/index.html?utm_source=pwa",
+  "scope": "/wizard-planet/",
   "display": "standalone",
   "display_override": ["standalone", "window-controls-overlay"],
   "orientation": "portrait",
   "background_color": "#87CEEB",
   "theme_color": "#FF8800",
+  "description": "An exciting AR adventure built for the modern web.",
   "icons": [
     {
-      "src": "wizard.png",
+      "src": "/wizard-planet/wizard.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any maskable"
     }
-  ],
-  "permissions": [
-    "camera"
   ]
 }
