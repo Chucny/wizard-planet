@@ -14,7 +14,7 @@
 ## ⚙️ Core Mechanics
 
 ### 📍 Proximity Spawning
-The game engine detects movement with **gyrometers and sensors**. As you walk, the logic dynamically generates new encounters based on your real-time coordinates.
+The game engine detects movement with **gyrometers and sensors**. As you walk, the logic dynamically generates new encounters based on your real-time movement.
 
 ### 📷 Hybrid AR
 Features a dual-mode catch system. You can switch between a stylized 3D background or a **live AR camera feed** with automatic back-camera prioritization.
@@ -36,7 +36,7 @@ Built using a "no-framework" approach for maximum performance and low latency:
 
 ## 🚀 Getting Started
 1. Open [https://chucny.github.io/wizard-planet](https://chucny.github.io/wizard-planet) on your mobile browser.
-2. **Enable Location Services** when prompted.
+2. **Enable Sensor & Gyrometer access** when prompted.
 3. For AR Mode, allow **Camera Access**.
 4. *Note: A secure (HTTPS) connection is required for sensor and Camera features.*
 
