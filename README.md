@@ -38,7 +38,7 @@ Built using a "no-framework" approach for maximum performance and low latency:
 1. Open [https://chucny.github.io/wizard-planet](https://chucny.github.io/wizard-planet) on your mobile browser.
 2. **Enable Location Services** when prompted.
 3. For AR Mode, allow **Camera Access**.
-4. *Note: A secure (HTTPS) connection is required for GPS and Camera features.*
+4. *Note: A secure (HTTPS) connection is required for sensor and Camera features.*
 
 ---
 
