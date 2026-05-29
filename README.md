@@ -7,14 +7,14 @@
 ---
 
 ## 🌍 Project Overview
-**Wizard Planet** is a mobile-first web application that turns your physical environment into a digital world. By combining real-time GPS tracking with Augmented Reality, it creates a unique scavenger hunt experience directly in your browser.
+**Wizard Planet** is a mobile-first web application that turns your physical environment into a digital world. By combining real-time sensor tracking with Augmented Reality, it creates a unique scavenger hunt experience directly in your browser.
 
 ---
 
 ## ⚙️ Core Mechanics
 
 ### 📍 Proximity Spawning
-The game engine detects movement with **3.5m precision**. As you walk, the logic dynamically generates new encounters based on your real-time coordinates.
+The game engine detects movement with **gyrometers and sensors**. As you walk, the logic dynamically generates new encounters based on your real-time coordinates.
 
 ### 📷 Hybrid AR
 Features a dual-mode catch system. You can switch between a stylized 3D background or a **live AR camera feed** with automatic back-camera prioritization.
@@ -30,7 +30,6 @@ Built using a "no-framework" approach for maximum performance and low latency:
 * **Vanilla JS (ES6+):** Core game logic and rendering.
 * **Firebase:** Realtime Database for cloud-synced player inventories.
 * **MQTT / WebSockets:** HiveMQ broker for global raid synchronization.
-* **Geolocation API:** High-accuracy GPS tracking logic.
 * **OpenStreetMap:** Dynamic map tile rendering.
 
 ---
