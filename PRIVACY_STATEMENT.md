@@ -35,5 +35,6 @@ Players can delete their account and all associated data directly from inside th
 ## Contact
 
 If you have questions, you can contact support through the in-app support section.
+Or contact here: https://chucny.github.io/wizard-planet/support.html
 
 © 2026 Chucny
