@@ -14,7 +14,7 @@ We do **not** collect precise location data or use GPS tracking.
 
 ## Location Data
 
-Wizard Planet does not request, collect, or store user location data. 
+Wizard Planet does not request GPS or precise device location. The game may use approximate location information derived from a user's IP address to provide map-based gameplay features. This information is not used for precise tracking.
 
 ## How We Use Data
 
