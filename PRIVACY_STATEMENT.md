@@ -30,7 +30,7 @@ The game may use Firebase to store game data and enable online features.
 
 ## Data Deletion
 
-Players can delete their account and all associated data directly from inside the app.
+Players can delete their account and all associated data directly from inside the app. Account deletion permanently removes the associated game data immediately.
 
 ## Contact
 
