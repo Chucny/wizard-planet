@@ -274,6 +274,35 @@ html, body {
 }
 .release-btn:hover { background: #ffebee; color: #f44336; }
 </style>
+
+<!-- Force Light Mode -->
+<meta name="theme-color" content="#ffffff">
+
+<style>
+  :root {
+    color-scheme: light;
+  }
+
+  html, body {
+  background-color: lightblue !important;
+  color: #000 !important;
+}
+
+  canvas,
+  img,
+  video {
+    color-scheme: light;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    html, body {
+  background-color: lightblue !important;
+  color: #000 !important;
+}
+  }
+</style>
+
+    
 </head>
 <body>
 <!-- Map and player -->
