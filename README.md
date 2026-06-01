@@ -37,8 +37,9 @@ Built using a "no-framework" approach for maximum performance and low latency:
 ## 🚀 Getting Started
 1. Open [https://chucny.github.io/wizard-planet](https://chucny.github.io/wizard-planet) on your mobile browser.
 2. **Enable Sensor & Gyrometer access** when prompted.
-3. For AR Mode, allow **Camera Access**.
-4. *Note: A secure (HTTPS) connection is required for sensor and Camera features.*
+3. **Enable Location access** when prompted.
+4. For AR Mode, allow **Camera Access**.
+5. *Note: A secure (HTTPS) connection is required for sensor and Camera features.*
 
 ---
 
