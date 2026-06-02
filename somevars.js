@@ -1,6 +1,6 @@
 let CURRENT_RAID_SHAPE_SIDES = 5; 
 let BOSS_HP_VAR = 2100;
-
+let discordLink = "https://discord.gg/wSumqtNT";
 
 // anticheat stuff
 
