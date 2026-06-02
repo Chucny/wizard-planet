@@ -2490,13 +2490,29 @@ document.getElementById('stepCounter').innerText = "0 / 200 STEPS";
         document.getElementById('hatchOverlay').style.display = 'flex';
     };
 
-    // Real Sensor
-    window.addEventListener('devicemotion', (e) => {
-        let a = e.accelerationIncludingGravity;
-        if(!a) return;
-        let accel = Math.sqrt(a.x*a.x + a.y*a.y + a.z*a.z);
-        if (accel > 15) window.addStep(); 
-    });
+   // Real Sensor
+    let lastAccel = null;
+
+window.addEventListener('devicemotion', (e) => {
+    const a = e.accelerationIncludingGravity;
+    if (!a) return;
+
+    const accel = Math.sqrt(
+        a.x * a.x +
+        a.y * a.y +
+        a.z * a.z
+    );
+
+    if (lastAccel !== null) {
+        const delta = Math.abs(accel - lastAccel);
+
+        if (delta > 2.0) {
+            window.addStep();
+        }
+    }
+
+    lastAccel = accel;
+});
 })();
 </script>
 <script>
@@ -2665,7 +2681,7 @@ JOIN WIZARD FEST 2026 NOW, IN JUNE 2026!
             const delta = Math.abs(magnitude - lastMagnitude);
             lastMagnitude = magnitude;
 
-            if (delta > 4.5 && !stepCooldown) {
+            if (delta > 2.0 && !stepCooldown) {
                 window.registerDeviceStep();
                 stepCooldown = true;
                 setTimeout(() => { stepCooldown = false; }, 400); 
