@@ -2497,27 +2497,106 @@ window.addEventListener('devicemotion', (e) => {
 });
 })();
 </script>
+
 <script>
-(function(){document.body.insertAdjacentHTML('beforeend',`<div id="eventNoticePopup" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.85);z-index:10005;align-items:center;justify-content:center;font-family:sans-serif;pointer-events:all;"><div style="background:white;width:85%;max-width:400px;border-radius:25px;overflow:hidden;text-align:center;box-shadow:0 10px 30px rgba(0,0,0,0.5);"><div style="background:linear-gradient(135deg,#f39c12,#d35400);padding:40px 20px;color:white;"><h2 style="margin:0;font-size:24px;font-weight:900;letter-spacing:1px;">
+let discordLink = "https://discord.gg/yourInviteCode";
 
-WIZARD FEST 2026!
+(function(){
+document.body.insertAdjacentHTML('beforeend',`
+<div id="eventNoticePopup" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.85);z-index:10005;align-items:center;justify-content:center;font-family:sans-serif;pointer-events:all;">
 
-</h2></div><div style="padding:30px;color:#34495e;"><p style="font-size:17px;line-height:1.6;margin-bottom:20px;"><b>
+    <div style="background:white;width:85%;max-width:420px;border-radius:25px;overflow:hidden;text-align:center;box-shadow:0 10px 30px rgba(0,0,0,0.5);">
 
-Wizard Fest 2026 comes and 4-corner Polygon debuts!
+        <div style="background:linear-gradient(135deg,#f39c12,#d35400);padding:35px 20px;color:white;">
+            <h2 style="margin:0;font-size:22px;font-weight:900;letter-spacing:1px;">
+                WIZARD FEST 2026!
+            </h2>
+        </div>
 
-</b><br>
+        <div style="padding:22px;color:#34495e;">
 
-In June 2026, it is Wizard Fest 2026! Experience Wizard Fest in-person to in following cities and catch grey, in-person exclusive shiny Polygons: Helsinki, Karlstad, Tokyo, New York and Madrid!<br>
-<h3>Wizard Fest: Global!</h3>
-Experience Wizard Fest 2026: Global during 15th June to 30th June! 
-Note: grey Polygon is not availble during Wizard Fest 2026: Global.
+            <p style="font-size:14px;line-height:1.7;margin-bottom:18px;">
+                <b>Wizard Fest 2026 has arrived!</b>
+                <br><br>
 
-</p><div style="background:#fef9e7;padding:15px;border-radius:15px;font-size:14px;color:#7d6608;border:1px solid #f9e79f;font-weight:bold;">
+                Celebrate the debut of the new
+                <b>4-Corner Polygon</b>.
 
-Join <b>Wizard Fest 2026</b> in June!
+                <br><br>
 
-</div></div><button id="closeEventBtn" style="width:80%;padding:15px;border:none;background:#e67e22;color:white;font-weight:900;font-size:18px;cursor:pointer;border-radius:50px;margin-bottom:25px;box-shadow:0 4px 0 #a04000;">LET'S GO!</button></div></div>`);var _ep=document.getElementById("eventNoticePopup"),_eb=document.getElementById("closeEventBtn"),_ls=document.getElementById("loginScreen");_eb.onclick=()=>_ep.style.display="none";var _evObs=new MutationObserver((m,o)=>{if(window.getComputedStyle(_ls).display==="none"){setTimeout(()=>{_ep.style.display="flex"},600);o.disconnect()}});if(_ls)_evObs.observe(_ls,{attributes:true,attributeFilter:['style']});})();</script>
+                Attend Wizard Fest in person in:
+                <br>
+                Helsinki • Karlstad • Tokyo • New York • Madrid
+
+                <br><br>
+
+                Trainers attending these live events can encounter
+                exclusive grey shiny Polygons.
+            </p>
+
+            <div style="background:#f8f9fa;padding:15px;border-radius:15px;margin-bottom:18px;">
+                <h3 style="margin:0 0 8px 0;font-size:15px;color:#2c3e50;">
+                    Wizard Fest: Global
+                </h3>
+
+                <div style="font-size:13px;line-height:1.6;">
+                    June 15 – June 30, 2026
+                    <br><br>
+                    Join from anywhere in the world.
+                    <br>
+                    <b>Note:</b> Grey Polygon is not available during the Global event.
+                </div>
+            </div>
+
+            <div style="background:#fef9e7;padding:12px;border-radius:15px;font-size:13px;color:#7d6608;border:1px solid #f9e79f;font-weight:bold;margin-bottom:15px;">
+                Join Wizard Fest 2026 this June!
+            </div>
+
+            <a id="discordBtn"
+               href="#"
+               target="_blank"
+               style="display:inline-block;background:#5865F2;color:white;text-decoration:none;padding:10px 20px;border-radius:12px;font-size:13px;font-weight:bold;margin-bottom:10px;">
+                Join our Discord
+            </a>
+
+        </div>
+
+        <button id="closeEventBtn"
+            style="width:80%;padding:13px;border:none;background:#e67e22;color:white;font-weight:900;font-size:16px;cursor:pointer;border-radius:50px;margin-bottom:25px;box-shadow:0 4px 0 #a04000;">
+            LET'S GO!
+        </button>
+
+    </div>
+
+</div>
+`);
+
+document.getElementById("discordBtn").href = discordLink;
+
+var _ep = document.getElementById("eventNoticePopup"),
+    _eb = document.getElementById("closeEventBtn"),
+    _ls = document.getElementById("loginScreen");
+
+_eb.onclick = () => _ep.style.display = "none";
+
+var _evObs = new MutationObserver((m,o)=>{
+    if(window.getComputedStyle(_ls).display === "none"){
+        setTimeout(()=>{
+            _ep.style.display = "flex";
+        },600);
+        o.disconnect();
+    }
+});
+
+if(_ls){
+    _evObs.observe(_ls,{
+        attributes:true,
+        attributeFilter:['style']
+    });
+}
+})();
+</script>
+
 
 
 
