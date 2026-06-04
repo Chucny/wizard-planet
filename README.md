@@ -22,6 +22,12 @@ Features a dual-mode catch system. You can switch between a stylized 3D backgrou
 ### 🤝 Defeat Polygon in Raids!
 Global boss battles are synchronized via **MQTT**. Join friends instantly using session-specific raid codes for real-time collaborative damage.
 
+### 🤝 Trade! 
+Trade with friends, synchronized via HiveMQ **MQTT**.
+
+### And much more!
+Features are constantly added, and new beta releases are released here: [**https://chucny.github.io/wizard-planet/beta**](https://chucny.github.io/wizard-planet/beta)
+
 ---
 
 ## 🛠️ Technical Stack
