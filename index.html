@@ -121,9 +121,7 @@ checkWizardFestAccess();
 <meta name="apple-mobile-web-app-capable" content="yes">
 <!-- Tämä kertoo Googlelle, että kyseessä on Web-sovellus -->
 
-    
 <script src="somevars.js"></script>
-
 
 
 
@@ -2786,4 +2784,259 @@ if(_ls){
     // Synchronize UI view immediately after login processing finishes
     setTimeout(updateTicketUI, 800);
 })();</script>
+<script>
+// =============================================================================
+// FIX: COOLDOWN & REAL-TIME INTER-CLIENT DAMAGE PASSING
+// =============================================================================
+(function() {
+    let selectedRaidWizard = null;
+    let isClickOnCooldown = false; // Restores the requested 1-second cooldown flag
 
+    // --- 1. HOST TIMER RE-WRITE (Removes passive background DPS) ---
+    if (typeof startRaidBattleLoop === 'function') {
+        startRaidBattleLoop = function() {
+            if (!raidHost || !raidActive) return;
+            showRaidBattleScreen(raidActive.boss);
+            
+            if (raidActive.intervalId) {
+                clearInterval(raidActive.intervalId);
+            }
+            
+            // Host timer tracking loop (passive autonomous damage removed)
+            raidActive.intervalId = setInterval(() => {
+                if (!raidActive) return;
+                raidActive.timer--;
+                updateRaidUI();
+
+                if (mqttClient) {
+                    mqttClient.publish(RAID_TOPIC_PREFIX + currentRaidCode, JSON.stringify({type: "raidState", raid: raidActive}));
+                }
+
+                if (raidActive.timer <= 0) {
+                    clearInterval(raidActive.intervalId);
+                    if (mqttClient) {
+                        mqttClient.publish(RAID_TOPIC_PREFIX + currentRaidCode, JSON.stringify({type: "raidEnded"}));
+                    }
+                    alert("⏱️ Time's up! Raid failed.");
+                    const screen = document.getElementById('raidBattleScreen');
+                    if (screen) screen.style.display = "none";
+                    raidActive = null;
+                }
+            }, 1000);
+        };
+    }
+
+    // --- 2. THE LOCAL CLICK ENGINE (With 1-Second Cooldown) ---
+    const battleZone = document.getElementById('raidBattleScreen');
+    if (battleZone) {
+        battleZone.style.cursor = "pointer";
+        
+        battleZone.addEventListener('click', function(event) {
+            if (event.target.tagName === 'BUTTON') return;
+            if (!raidActive || !raidActive.boss) return;
+            
+            // Cooldown protection
+            if (isClickOnCooldown) return; 
+            isClickOnCooldown = true;
+            setTimeout(() => { isClickOnCooldown = false; }, 1000); // 1 Second limit
+
+            // Base Damage Payload
+            let calculatedDamage = 5; 
+            
+            // Scaled bonus damage calculations
+            if (selectedRaidWizard && typeof selectedRaidWizard.iv === 'string') {
+                const ivValues = selectedRaidWizard.iv.split("/").map(num => parseInt(num) || 0);
+                const rawAttack = ivValues[0] || 0;
+                calculatedDamage += Math.min(rawAttack, 10); 
+
+                // Pulls direct int shapeSides properties dynamically
+                const corners = parseInt(selectedRaidWizard.shapeSides);
+                if (!isNaN(corners) && corners > 0) {
+                    calculatedDamage += corners; 
+                }
+            }
+
+            // Route damage payload depending on peer role
+            if (raidHost) {
+                // Host updates local state instantly
+                raidActive.boss.hp = Math.max(0, raidActive.boss.hp - calculatedDamage);
+                updateRaidUI();
+                
+                if (mqttClient) {
+                    mqttClient.publish(RAID_TOPIC_PREFIX + currentRaidCode, JSON.stringify({type: "raidState", raid: raidActive}));
+                }
+
+                if (raidActive.boss.hp <= 0) {
+                    clearInterval(raidActive.intervalId);
+                    mqttClient.publish(RAID_TOPIC_PREFIX + currentRaidCode, JSON.stringify({type: "raidEnded", boss: raidActive.boss}));
+                    collectPolygonFromRaid(raidActive.boss);
+                    battleZone.style.display = "none";
+                    raidActive = null;
+                }
+            } else {
+                // Non-hosts propagate packet upstream to the host broker channel
+                if (mqttClient) {
+                    mqttClient.publish(RAID_TOPIC_PREFIX + currentRaidCode, JSON.stringify({
+                        type: "manualRaidDamageTap",
+                        damageValue: calculatedDamage
+                    }));
+                }
+            }
+            
+            if (typeof animateWizardAttack === 'function') {
+                animateWizardAttack();
+            }
+        });
+    }
+
+    // --- 3. RE-ENGINEER INTERCEPTED CLIENT/HOST PACKET PROCESSING ---
+    // This loops every half second to catch the broker setup and append the listener
+    const applyMqttInterceptor = setInterval(() => {
+        if (mqttClient) {
+            clearInterval(applyMqttInterceptor);
+
+            // Snag reference to base receiver logic to prevent dropping joins/ends
+            const baseListeners = mqttClient.listeners('message');
+            const originalReceiver = baseListeners.length > 0 ? baseListeners[0] : null;
+            
+            mqttClient.removeAllListeners('message');
+            mqttClient.on('message', (topic, payload) => {
+                try {
+                    const dataPacket = JSON.parse(payload.toString());
+                    
+                    // HOST EXCLUSIVE: Listen for client incoming damage calls and subtract it
+                    if (dataPacket.type === "manualRaidDamageTap" && raidHost && raidActive && raidActive.boss) {
+                        raidActive.boss.hp = Math.max(0, raidActive.boss.hp - (dataPacket.damageValue || 0));
+                        updateRaidUI();
+                        
+                        // Push corrected sync state immediately back out to non-hosts
+                        mqttClient.publish(RAID_TOPIC_PREFIX + currentRaidCode, JSON.stringify({type: "raidState", raid: raidActive}));
+
+                        if (raidActive.boss.hp <= 0) {
+                            clearInterval(raidActive.intervalId);
+                            mqttClient.publish(RAID_TOPIC_PREFIX + currentRaidCode, JSON.stringify({type: "raidEnded", boss: raidActive.boss}));
+                            collectPolygonFromRaid(raidActive.boss);
+                            if (battleZone) battleZone.style.display = "none";
+                            raidActive = null;
+                        }
+                        return; // Packet consumed safely
+                    }
+                } catch (error) {}
+                
+                // Route back to default game updates (for joins, game endings, room state syncing)
+                if (originalReceiver) {
+                    try { originalReceiver(topic, payload); } catch(err){}
+                }
+            });
+        }
+    }, 500);
+
+    // --- 4. SELECTION OVERLAY & INTERCEPTORS ---
+    window.displayPreRaidInventorySelector = function(confirmTriggerAction) {
+        if (typeof inventory === 'undefined' || !inventory || !Array.isArray(inventory) || inventory.length === 0) {
+            alert("⚠️ Your inventory is empty! Catch a wizard before challenging a Raid Boss.");
+            return;
+        }
+
+        const eligibleWizards = [];
+        for (let i = 0; i < inventory.length; i++) {
+            const item = inventory[i];
+            if (item && typeof item === 'object' && item.iv && typeof item.iv === 'string') {
+                if (item.iv.includes('/')) {
+                    const parts = item.iv.split('/');
+                    const attackCheck = parseInt(parts[0]);
+                    if (!isNaN(attackCheck)) {
+                        eligibleWizards.push(item);
+                    }
+                }
+            }
+        }
+
+        if (eligibleWizards.length === 0) {
+            alert("❌ Please catch a Wizard to battle with first!");
+            return;
+        }
+
+        const modalBackground = document.createElement('div');
+        modalBackground.style.cssText = "position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(20,30,40,0.95); z-index:11000; display:flex; flex-direction:column; align-items:center; justify-content:center; color:white; font-family:sans-serif; padding:20px; box-sizing:border-box;";
+        
+        const titleText = document.createElement('h3');
+        titleText.textContent = "SELECT YOUR COMBAT WIZARD";
+        titleText.style.cssText = "margin-bottom:20px; color:#ff8800; font-weight:bold; font-size:20px; letter-spacing:1px;";
+        modalBackground.appendChild(titleText);
+
+        const listContainer = document.createElement('div');
+        listContainer.style.cssText = "display:flex; flex-wrap:wrap; justify-content:center; gap:15px; max-height:65%; overflow-y:auto; width:100%; padding:10px; box-sizing:border-box;";
+        
+        eligibleWizards.forEach((item) => {
+            const stats = item.iv.split("/").map(val => parseInt(val) || 0);
+            const attackStat = stats[0] || 0;
+            const corners = parseInt(item.shapeSides) || 0;
+            const shapeBonus = corners > 0 ? corners : 0;
+            const displayedTotalTapBonus = Math.min(attackStat, 10) + shapeBonus;
+
+            const entryItemCard = document.createElement('div');
+            entryItemCard.style.cssText = "background:#34495e; border:2px solid #2c3e50; border-radius:12px; padding:12px; width:140px; text-align:center; cursor:pointer; box-sizing:border-box; box-shadow:0 4px 6px rgba(0,0,0,0.2);";
+            entryItemCard.innerHTML = `
+                <div style="font-weight:bold; font-size:14px; margin-bottom:6px; color:#fff; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${item.name || 'Combat Wizard'}</div>
+                <div style="width:35px; height:35px; background:${item.color || 'blue'}; margin:8px auto; border-radius:${corners === 0 ? '50%' : '0'}; clip-path:${corners === 8 ? 'polygon(30% 0%,70% 0%,100% 30%,100% 70%,70% 100%,30% 100%,0% 70%,0% 30%)' : 'none'}; border:1px solid rgba(255,255,255,0.2);"></div>
+                <div style="font-size:12px; color:#bdc3c7;">Attack Stat: ${attackStat}</div>
+                <div style="font-size:12px; color:#bdc3c7; margin-bottom:6px;">Sides: ${corners || 'Circle (0)'}</div>
+                <div style="font-size:13px; color:#2ecc71; font-weight:bold;">+${displayedTotalTapBonus} Damage / Turn</div>
+            `;
+            
+            entryItemCard.addEventListener('click', () => {
+                selectedRaidWizard = item;
+                document.body.removeChild(modalBackground);
+                confirmTriggerAction();
+            });
+            listContainer.appendChild(entryItemCard);
+        });
+
+        modalBackground.appendChild(listContainer);
+        
+        const abortBtn = document.createElement('button');
+        abortBtn.textContent = "CANCEL";
+        abortBtn.style.cssText = "margin-top:20px; padding:12px 28px; background:#e74c3c; color:white; border:none; border-radius:25px; font-weight:bold; cursor:pointer; box-shadow:0 4px 10px rgba(0,0,0,0.2);";
+        abortBtn.addEventListener('click', () => { document.body.removeChild(modalBackground); });
+        modalBackground.appendChild(abortBtn);
+        
+        document.body.appendChild(modalBackground);
+    };
+
+    let baseCreateRaid = null;
+    let baseJoinRaid = null;
+
+    const hookInterval = setInterval(() => {
+        if (typeof window.createRaid === 'function' && window.createRaid !== customCreateRaid) {
+            baseCreateRaid = window.createRaid;
+            window.createRaid = customCreateRaid;
+        }
+        if (typeof window.joinRaid === 'function' && window.joinRaid !== customJoinRaid) {
+            baseJoinRaid = window.joinRaid;
+            window.joinRaid = customJoinRaid;
+        }
+    }, 500);
+
+    setTimeout(() => { clearInterval(hookInterval); }, 5000);
+
+    function customCreateRaid() {
+        window.displayPreRaidInventorySelector(() => {
+            if (typeof baseCreateRaid === 'function') baseCreateRaid();
+            else { if (typeof startRaidHost === 'function') startRaidHost(); }
+        });
+    }
+
+    function customJoinRaid() {
+        window.displayPreRaidInventorySelector(() => {
+            if (typeof baseJoinRaid === 'function') baseJoinRaid();
+            else {
+                const syncInput = document.getElementById('raidCodeInput');
+                if (syncInput && syncInput.value && typeof joinRaidLobby === 'function') joinRaidLobby(syncInput.value.trim().toUpperCase());
+            }
+        });
+    }
+})();
+// =============================================================================
+</script>
+<script>
